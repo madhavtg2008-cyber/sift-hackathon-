@@ -7,6 +7,16 @@ import { uid } from "./util";
 
 const KEY = "sift:v1";
 const RULES_KEY = "sift:rules";
+const LAST_PROFILE_KEY = "sift:lastProfile";
+
+export function lastProfile(): Profile | null {
+  try {
+    const raw = localStorage.getItem(LAST_PROFILE_KEY);
+    return raw ? (JSON.parse(raw) as Profile) : null;
+  } catch {
+    return null;
+  }
+}
 
 const EMPTY: AppData = { version: 1, profile: null, conversations: [], items: {} };
 
@@ -61,6 +71,17 @@ export function useAppData() {
 
   const actions = {
     setProfile: (profile: Profile) => update((d) => ({ ...d, profile })),
+
+    /** Sign out of the local profile. Chats stay on this device for the next sign-in. */
+    logout: () =>
+      update((d) => {
+        try {
+          if (d.profile) localStorage.setItem(LAST_PROFILE_KEY, JSON.stringify(d.profile));
+        } catch {
+          /* ignore */
+        }
+        return { ...d, profile: null };
+      }),
 
     addConversation: (name: string, source: Source, messages: Omit<Message, "id">[], readCount = 0) => {
       const id = uid();

@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { analyzeConversation, buildContext } from "@/lib/engine";
 import { installNetguard, netguard } from "@/lib/netguard";
-import { useAppData, useLexicon } from "@/lib/store";
-import type { ConvAnalysis } from "@/lib/types";
+import { lastProfile, useAppData, useLexicon } from "@/lib/store";
+import type { ConvAnalysis, Profile } from "@/lib/types";
 import { relTime } from "@/lib/util";
 import { ConversationView } from "./ConversationView";
 import { Digest } from "./Digest";
@@ -13,6 +13,7 @@ import { ListView, type ListFilter } from "./ListView";
 import { PrivacyPanel, useNetEvents } from "./PrivacyPanel";
 import { ProfileForm } from "./ProfileForm";
 import { SettingsModal } from "./SettingsModal";
+import { ProfileModal } from "./ProfileModal";
 import { Avatar, Button, KIND_META, PriorityDot } from "./ui";
 import { usePrefs } from "@/lib/prefs";
 
@@ -32,23 +33,35 @@ export default function App() {
   const [navOpen, setNavOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
-  const [chatsOpen, setChatsOpen] = useState(true);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [returning, setReturning] = useState<Profile | null>(null);
+  useEffect(() => {
+    if (data && !data.profile) setReturning(lastProfile());
+  }, [data]);
+  // collapsible sidebar sections, remembered per browser
+  const [sections, setSections] = useState({ chats: true, catchup: false });
   useEffect(() => {
     try {
-      if (localStorage.getItem("sift:chatsOpen") === "0") setChatsOpen(false);
+      const saved = JSON.parse(localStorage.getItem("sift:sections") ?? "null");
+      if (saved) setSections((s) => ({ ...s, ...saved }));
     } catch {
       /* ignore */
     }
   }, []);
-  const toggleChats = () =>
-    setChatsOpen((o) => {
+  const toggleSection = (k: "chats" | "catchup") =>
+    setSections((s) => {
+      const next = { ...s, [k]: !s[k] };
       try {
-        localStorage.setItem("sift:chatsOpen", o ? "0" : "1");
+        localStorage.setItem("sift:sections", JSON.stringify(next));
       } catch {
         /* ignore */
       }
-      return !o;
+      return next;
     });
+  const chatsOpen = sections.chats;
+  const toggleChats = () => toggleSection("chats");
+  // keep the categories open while one of them is the current page
+  const catchupOpen = sections.catchup || view.kind === "list";
   const events = useNetEvents();
   const dataRef = useRef(data);
   dataRef.current = data;
@@ -132,10 +145,32 @@ export default function App() {
             It runs entirely on this device: your conversations never touch a server.
           </p>
           <div className="mt-8 rounded-2xl border border-line bg-panel p-5">
-            <ProfileForm initial={null} onSave={actions.setProfile} submitLabel="Start sifting →" compact />
+            {returning ? (
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted">Welcome back</p>
+                <button
+                  onClick={() => actions.setProfile(returning)}
+                  className="mt-3 flex w-full items-center gap-3 rounded-xl border border-line2 p-3 text-left transition hover:border-accent"
+                >
+                  <Avatar name={returning.name} size={40} />
+                  <span className="flex-1">
+                    <span className="block font-medium">Continue as {returning.name}</span>
+                    <span className="block text-xs text-muted">
+                      {data.conversations.length} chat{data.conversations.length === 1 ? "" : "s"} saved on this device
+                    </span>
+                  </span>
+                  <span className="text-accent">→</span>
+                </button>
+                <button onClick={() => setReturning(null)} className="mt-3 text-xs text-muted underline underline-offset-4 hover:text-ink">
+                  Use a different name
+                </button>
+              </div>
+            ) : (
+              <ProfileForm initial={null} onSave={actions.setProfile} submitLabel="Sign in →" compact />
+            )}
           </div>
           <p className="mt-4 flex items-center gap-2 text-xs text-faint">
-            <ShieldIcon /> No account. No cloud AI. Data lives in your browser&apos;s storage.
+            <ShieldIcon /> No password, no server. Your profile and chats live only in this browser.
           </p>
         </div>
       </main>
@@ -166,19 +201,43 @@ export default function App() {
 
   const nav = (
     <nav className="flex h-full flex-col gap-6 overflow-y-auto p-4">
-      <div className="space-y-0.5">
-        <NavItem active={view.kind === "digest"} onClick={() => { setView({ kind: "digest" }); setNavOpen(false); }} icon="✦" label="Catch me up" />
-        {(["action", "question", "deadline", "mention", "decision"] as ListFilter[]).map((f) => (
-          <NavItem
-            key={f}
-            active={view.kind === "list" && view.filter === f}
-            onClick={() => { setView({ kind: "list", filter: f }); setNavOpen(false); }}
-            icon={KIND_META[f].icon}
-            iconColor={KIND_META[f].color}
-            label={{ action: "Tasks", question: "Questions", deadline: "Deadlines", mention: "Mentions", decision: "Decisions" }[f]}
-            count={counts[f]}
-          />
-        ))}
+      <div>
+        <div className="flex items-center gap-0.5">
+          <div className="flex-1">
+            <NavItem active={view.kind === "digest"} onClick={() => { setView({ kind: "digest" }); setNavOpen(false); }} icon="✦" label="Catch me up" />
+          </div>
+          <button
+            onClick={() => toggleSection("catchup")}
+            aria-expanded={catchupOpen}
+            aria-label={catchupOpen ? "Collapse categories" : "Expand categories"}
+            className="flex h-9 w-8 items-center justify-center rounded-lg text-faint hover:bg-panel2 hover:text-ink"
+          >
+            <span className={`inline-block text-xs transition-transform duration-300 ${catchupOpen ? "rotate-90" : ""}`}>▸</span>
+          </button>
+        </div>
+        <div
+          className="grid transition-[grid-template-rows,opacity] duration-300 ease-out"
+          style={{ gridTemplateRows: catchupOpen ? "1fr" : "0fr", opacity: catchupOpen ? 1 : 0 }}
+          aria-hidden={!catchupOpen}
+          inert={!catchupOpen}
+        >
+          <div className="min-h-0 overflow-hidden">
+            <div className="ml-4 mt-0.5 space-y-0.5 border-l border-line pl-2">
+              {(["action", "question", "deadline", "mention", "decision"] as ListFilter[]).map((f) => (
+                <NavItem
+                  key={f}
+                  active={view.kind === "list" && view.filter === f}
+                  onClick={() => { setView({ kind: "list", filter: f }); setNavOpen(false); }}
+                  icon={KIND_META[f].icon}
+                  iconColor={KIND_META[f].color}
+                  label={{ action: "Tasks", question: "Questions", deadline: "Deadlines", mention: "Mentions", decision: "Decisions" }[f]}
+                  count={counts[f]}
+                  small
+                />
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="min-h-0 flex-1">
@@ -188,7 +247,7 @@ export default function App() {
             aria-expanded={chatsOpen}
             className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-faint hover:text-ink"
           >
-            <span className={`inline-block transition-transform ${chatsOpen ? "rotate-90" : ""}`}>▸</span>
+            <span className={`inline-block transition-transform duration-300 ${chatsOpen ? "rotate-90" : ""}`}>▸</span>
             Chats
             <span className="font-mono normal-case tracking-normal">({convs.length})</span>
             {!chatsOpen && totalUnread > 0 && (
@@ -199,8 +258,13 @@ export default function App() {
             +
           </button>
         </div>
-        {chatsOpen && (
-          <div className="rise space-y-0.5">
+        <div
+          className="grid transition-[grid-template-rows,opacity] duration-300 ease-out"
+          style={{ gridTemplateRows: chatsOpen ? "1fr" : "0fr", opacity: chatsOpen ? 1 : 0 }}
+          aria-hidden={!chatsOpen}
+          inert={!chatsOpen}
+        >
+          <div className="min-h-0 space-y-0.5 overflow-hidden">
             {convs.map((c) => {
               const a = analyses.get(c.id);
               const last = c.messages[c.messages.length - 1];
@@ -268,23 +332,40 @@ export default function App() {
               </button>
             )}
           </div>
-        )}
+        </div>
       </div>
 
-      <div className="space-y-2 border-t border-line pt-3 text-[0.6875rem] text-faint">
-        <button
-          onClick={() => {
-            setProfileOpen(true);
-            setNavOpen(false);
-          }}
-          className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left hover:bg-panel2"
-        >
-          <Avatar name={data.profile.name} size={26} />
-          <span className="flex-1 truncate text-sm text-ink">{data.profile.name}</span>
-          <span className="flex items-center gap-1 text-xs text-muted">
-            <GearIcon /> Settings
+      <div className="rounded-xl border border-line bg-panel p-2.5">
+        <div className="flex items-center gap-2.5 px-1 pb-2.5">
+          <span className="relative">
+            <Avatar name={data.profile.name} size={34} />
+            <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-panel bg-accent" title="Signed in on this device" />
           </span>
-        </button>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium text-ink">{data.profile.name}</span>
+            <span className="block truncate text-[0.6875rem] text-faint">Signed in · this device</span>
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          <button
+            onClick={() => {
+              setAccountOpen(true);
+              setNavOpen(false);
+            }}
+            className="flex items-center justify-center gap-1.5 rounded-lg border border-line2 py-1.5 text-xs text-muted transition hover:border-accent/50 hover:text-ink"
+          >
+            <UserIcon /> Profile
+          </button>
+          <button
+            onClick={() => {
+              setProfileOpen(true);
+              setNavOpen(false);
+            }}
+            className="flex items-center justify-center gap-1.5 rounded-lg border border-line2 py-1.5 text-xs text-muted transition hover:border-accent/50 hover:text-ink"
+          >
+            <GearIcon /> Settings
+          </button>
+        </div>
       </div>
     </nav>
   );
@@ -409,14 +490,25 @@ export default function App() {
         onClose={() => setProfileOpen(false)}
         prefs={prefs}
         onPrefs={updatePrefs}
-        profile={data.profile}
-        onProfile={(p) => {
-          actions.setProfile(p);
-          setProfileOpen(false);
-        }}
         onOpenPrivacy={() => {
           setProfileOpen(false);
           setPrivacyOpen(true);
+        }}
+      />
+      <ProfileModal
+        open={accountOpen}
+        onClose={() => setAccountOpen(false)}
+        profile={data.profile}
+        stats={{
+          chats: data.conversations.length,
+          messages: data.conversations.reduce((n, c) => n + c.messages.length, 0),
+          done: Object.values(data.items).filter((i) => i.done).length,
+        }}
+        onSave={actions.setProfile}
+        onLogout={() => {
+          setAccountOpen(false);
+          setView({ kind: "digest" });
+          actions.logout();
         }}
       />
       <PrivacyPanel
@@ -437,11 +529,11 @@ export default function App() {
   );
 }
 
-function NavItem({ active, onClick, icon, iconColor, label, count }: { active: boolean; onClick: () => void; icon: string; iconColor?: string; label: string; count?: number }) {
+function NavItem({ active, onClick, icon, iconColor, label, count, small }: { active: boolean; onClick: () => void; icon: string; iconColor?: string; label: string; count?: number; small?: boolean }) {
   return (
     <button
       onClick={onClick}
-      className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition ${active ? "bg-panel2 text-ink" : "text-muted hover:bg-panel2/60 hover:text-ink"}`}
+      className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 ${small ? "py-1.5 text-[0.8125rem]" : "py-2 text-sm"} transition ${active ? "bg-panel2 text-ink" : "text-muted hover:bg-panel2/60 hover:text-ink"}`}
     >
       <span className="w-4 text-center font-mono text-xs" style={{ color: iconColor ?? "var(--color-accent)" }}>
         {icon}
@@ -479,6 +571,15 @@ function TrashIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden>
       <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function UserIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden>
+      <circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }

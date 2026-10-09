@@ -2,11 +2,9 @@
 
 import { useState } from "react";
 import { ACCENTS, THEMES, type Headline, type TextSize, type UiPrefs } from "@/lib/prefs";
-import type { Profile } from "@/lib/types";
-import { ProfileForm } from "./ProfileForm";
 import { Modal } from "./ui";
 
-type Tab = "look" | "you" | "reading";
+type Tab = "look" | "reading";
 
 function Segmented<T extends string>({ value, options, onChange }: { value: T; options: [T, string][]; onChange: (v: T) => void }) {
   return (
@@ -49,16 +47,12 @@ export function SettingsModal({
   onClose,
   prefs,
   onPrefs,
-  profile,
-  onProfile,
   onOpenPrivacy,
 }: {
   open: boolean;
   onClose: () => void;
   prefs: UiPrefs;
   onPrefs: (p: Partial<UiPrefs>) => void;
-  profile: Profile;
-  onProfile: (p: Profile) => void;
   onOpenPrivacy: () => void;
 }) {
   const [tab, setTab] = useState<Tab>("look");
@@ -71,7 +65,6 @@ export function SettingsModal({
           [
             ["look", "Appearance"],
             ["reading", "Reading"],
-            ["you", "About you"],
           ] as const
         ).map(([k, l]) => (
           <button
@@ -202,7 +195,6 @@ export function SettingsModal({
         </div>
       )}
 
-      {tab === "you" && <ProfileForm initial={profile} onSave={onProfile} submitLabel="Save" />}
     </Modal>
   );
 }

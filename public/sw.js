@@ -21,7 +21,10 @@ self.addEventListener("fetch", (event) => {
       if (file && typeof file !== "string") {
         await cache.put("/shared-chat", new Response(file, { headers: { "x-file-name": encodeURIComponent(file.name || "Shared chat") } }));
       } else if (typeof text === "string" && text.trim()) {
-        await cache.put("/shared-chat", new Response(text, { headers: { "x-file-name": encodeURIComponent(form.get("title") || "Shared chat") } }));
+        await cache.put(
+          "/shared-chat",
+          new Response(text, { headers: { "x-file-name": encodeURIComponent(form.get("title") || "Shared chat") } }),
+        );
       }
       return Response.redirect("/?share=1", 303);
     })(),

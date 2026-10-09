@@ -139,6 +139,7 @@ export function ConversationView({ conv, analysis, items, profile, focusMsgId, i
         <div className="min-w-0 flex-1">
           {editingName ? (
             <form
+              className="flex max-w-md items-center gap-1.5"
               onSubmit={(e) => {
                 e.preventDefault();
                 if (nameDraft.trim()) actions.renameConversation(conv.id, nameDraft.trim());
@@ -152,21 +153,42 @@ export function ConversationView({ conv, analysis, items, profile, focusMsgId, i
                 aria-label="Chat name"
                 onFocus={(e) => e.target.select()}
                 onChange={(e) => setNameDraft(e.target.value)}
-                onKeyDown={(e) => e.key === "Escape" && (setNameDraft(conv.name), setEditingName(false))}
-                onBlur={() => {
-                  if (nameDraft.trim() && nameDraft.trim() !== conv.name) actions.renameConversation(conv.id, nameDraft.trim());
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setNameDraft(conv.name);
+                    setEditingName(false);
+                  }
+                }}
+                className={`${inputCls} h-8 py-1 font-semibold`}
+              />
+              <Button size="sm" variant="primary" type="submit" disabled={!nameDraft.trim()}>
+                Save
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setNameDraft(conv.name);
                   setEditingName(false);
                 }}
-                className={`${inputCls} h-8 py-1`}
-              />
+              >
+                Cancel
+              </Button>
             </form>
           ) : (
-            <button onClick={() => setEditingName(true)} className="group/name flex max-w-full items-center gap-2 text-left" title="Rename chat">
-              <span className="truncate text-lg font-semibold">{conv.name}</span>
-              <span className="shrink-0 rounded-md px-1 text-sm text-faint transition group-hover/name:bg-panel2 group-hover/name:text-ink" aria-hidden>
-                ✎
-              </span>
-            </button>
+            <div className="flex max-w-full items-center gap-2">
+              <h2 className="truncate text-lg font-semibold">{conv.name}</h2>
+              <button
+                onClick={() => setEditingName(true)}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-line2 text-muted transition hover:border-accent hover:bg-accent/10 hover:text-accent"
+                aria-label="Rename chat"
+                title="Rename chat"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden>
+                  <path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
           )}
           <p className="text-xs text-muted">
             {analysis.participants.length} people · {conv.messages.length} messages · {analysis.unread} unread

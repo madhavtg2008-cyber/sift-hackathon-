@@ -1,7 +1,6 @@
 # Sift — catch up on chats, privately
 
 [![CI](https://github.com/madhavtg2008-cyber/sift-hackathon-/actions/workflows/ci.yml/badge.svg)](https://github.com/madhavtg2008-cyber/sift-hackathon-/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/madhavtg2008-cyber/sift-hackathon-/actions/workflows/codeql.yml/badge.svg)](https://github.com/madhavtg2008-cyber/sift-hackathon-/actions/workflows/codeql.yml)
 
 **200 unread messages. One of them is your deadline.** Sift reads your group chats and pulls out the mentions, questions, decisions, deadlines and tasks you missed, ranked by urgency and relevance. **Everything runs on your device — conversations and summaries never leave the browser, and the app proves it.**
 
@@ -9,13 +8,13 @@
 
 ## At a glance
 
-| Area                        | What's in the repo                                                                                                                                                                                                                                                                                                                              | Proof                                                                                                                                       |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Innovation**              | Local-first chat triage with explainable 0–100 priority scores; English + Hinglish deadline understanding ("kal subah 8 baje"); on-device Gemini Nano summaries; **Share to Sift** from WhatsApp (PWA share target); privacy firewall with a live leak test; local deadline reminders and `.ics` calendar export                                | [`engine.ts`](src/lib/engine.ts), [`dates.ts`](src/lib/dates.ts), [`public/sw.js`](public/sw.js), [`netguard.ts`](src/lib/netguard.ts)      |
-| **Code quality**            | TypeScript strict; ESLint + Prettier enforced in CI and builds; **89 unit/API tests** + **12 Playwright E2E tests**; **91.6 % line coverage** of logic layers with CI thresholds; shared zod contracts                                                                                                                                          | [`tests/`](tests), [`e2e/`](e2e), [`docs/TESTING.md`](docs/TESTING.md), [CI](.github/workflows/ci.yml)                                      |
-| **UI / UX & impact**        | Ranked "Needs you now", timeline, decisions; undo for every action; 6 themes; mobile tab bar; keyboard shortcuts; first-run export guide; **0 WCAG 2.1 A/AA violations** (axe)                                                                                                                                                                  | [`e2e/a11y.spec.ts`](e2e/a11y.spec.ts), [screenshots](#screenshots)                                                                         |
-| **Backend & architecture**  | Versioned **`/api/v1`** with **OpenAPI 3.1**, zod validation on server _and_ client, **rate limiting** (`RateLimit-*`), **RFC 9457** errors, request IDs, ETag/304; per-request CSP nonces in middleware; analysis in a **Web Worker** for large inboxes; windowed rendering; layered design                                                    | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`src/server/`](src/server), [`/api/v1/openapi.json`](src/app/api/v1/openapi.json/route.ts) |
-| **Security & optimisation** | Optional **AES-256-GCM** encrypted storage (PBKDF2 310k); nonce-based CSP without `unsafe-inline` scripts; HSTS, COOP/CORP, X-Frame-Options; CodeQL + Dependabot + `npm audit` (**0 vulnerabilities**); code-split dialogs and lazy validation keep first-load JS at **138 kB** (164 kB without splitting); 4 000-message chat opens in ~0.45 s | [`SECURITY.md`](SECURITY.md) (threat model), [`vault.ts`](src/lib/vault.ts), [`csp.ts`](src/lib/csp.ts)                                     |
+| Area                        | What's in the repo                                                                                                                                                                                                                                                                                               | Proof                                                                                                                                       |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Innovation**              | Local-first chat triage with explainable 0–100 priority scores; English + Hinglish deadline understanding ("kal subah 8 baje"); on-device Gemini Nano summaries; **Share to Sift** from WhatsApp (PWA share target); privacy firewall with a live leak test; local deadline reminders and `.ics` calendar export | [`engine.ts`](src/lib/engine.ts), [`dates.ts`](src/lib/dates.ts), [`public/sw.js`](public/sw.js), [`netguard.ts`](src/lib/netguard.ts)      |
+| **Code quality**            | TypeScript strict; ESLint + Prettier enforced in CI and builds; **89 unit/API tests** + **12 Playwright E2E tests**; **91.6 % line coverage** of logic layers with CI thresholds; shared zod contracts                                                                                                           | [`tests/`](tests), [`e2e/`](e2e), [`docs/TESTING.md`](docs/TESTING.md), [CI](.github/workflows/ci.yml)                                      |
+| **UI / UX & impact**        | Ranked "Needs you now", timeline, decisions; undo for every action; 6 themes; mobile tab bar; keyboard shortcuts; first-run export guide; **0 WCAG 2.1 A/AA violations** (axe)                                                                                                                                   | [`e2e/a11y.spec.ts`](e2e/a11y.spec.ts), [screenshots](#screenshots)                                                                         |
+| **Backend & architecture**  | Versioned **`/api/v1`** with **OpenAPI 3.1**, zod validation on server _and_ client, **rate limiting** (`RateLimit-*`), **RFC 9457** errors, request IDs, ETag/304; per-request CSP nonces in middleware; analysis in a **Web Worker** for large inboxes; windowed rendering; layered design                     | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`src/server/`](src/server), [`/api/v1/openapi.json`](src/app/api/v1/openapi.json/route.ts) |
+| **Security & optimisation** | Optional **AES-256-GCM** encrypted storage (PBKDF2 310k); nonce-based CSP without `unsafe-inline` scripts; HSTS, COOP/CORP, X-Frame-Options; code-split dialogs and lazy validation keep first-load JS at **138 kB** (164 kB without splitting); 4 000-message chat opens in ~0.45 s                             | [`vault.ts`](src/lib/vault.ts), [`csp.ts`](src/lib/csp.ts)                                                                                  |
 
 ## How it works
 
@@ -48,9 +47,6 @@
 | Encrypted storage (opt-in) | AES-256-GCM, PBKDF2-SHA256 (310 000 iterations), in-memory non-extractable key, fresh IV per write, tamper detection         |
 | Content-Security-Policy    | Per-request nonce, `'strict-dynamic'`, `connect-src 'self'`, `object-src 'none'`, `frame-ancestors 'none'`                   |
 | Server                     | No write endpoints; `POST /api/v1/health` always 403                                                                         |
-| Supply chain               | CodeQL, Dependabot, `npm audit` in CI                                                                                        |
-
-Full threat model: [`SECURITY.md`](SECURITY.md).
 
 ## Architecture
 
@@ -74,7 +70,7 @@ npm run test:coverage                # 89 unit/API tests, coverage thresholds
 npm run build && npm run test:e2e    # 12 Playwright tests incl. axe accessibility scans
 ```
 
-GitHub Actions runs lint, types, tests with coverage, formatting, `npm audit`, the production build and the full Playwright suite on every push; CodeQL runs alongside. Details: [`docs/TESTING.md`](docs/TESTING.md).
+GitHub Actions runs lint, types, tests with coverage, formatting, the production build and the full Playwright suite on every push. Details: [`docs/TESTING.md`](docs/TESTING.md).
 
 ## Screenshots
 

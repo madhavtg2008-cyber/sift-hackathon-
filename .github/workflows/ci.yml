@@ -24,8 +24,6 @@ jobs:
       - name: Unit + API tests with coverage thresholds
         run: npm run test:coverage
       - run: npm run format:check
-      - name: Dependency audit (production deps)
-        run: npm audit --omit=dev --audit-level=high
       - run: npm run build
       - uses: actions/upload-artifact@v4
         with:

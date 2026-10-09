@@ -159,7 +159,7 @@ export function installNetguard() {
 /** Lets the user prove the firewall works: tries to send a chat message to the server. */
 export async function selfTest(sample: string) {
   try {
-    await fetch("/api/health", { method: "POST", body: JSON.stringify({ leak: sample }) });
+    await fetch("/api/v1/health", { method: "POST", body: JSON.stringify({ leak: sample }) });
     return false; // request went through: firewall failed
   } catch {
     return true; // blocked

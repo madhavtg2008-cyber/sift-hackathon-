@@ -278,10 +278,14 @@ export function useLexicon() {
     } catch {
       /* ignore */
     }
-    fetch("/api/rules")
+    fetch(`/api/v1/rules?pack=${encodeURIComponent("en+hinglish")}`)
       .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((l: Lexicon) => {
-        if (!l?.urgent) return;
+      .then(async (raw: unknown) => {
+        // Validate downloaded rules against the shared contract (zod is loaded lazily, off the critical path).
+        const { LexiconSchema } = await import("./contracts");
+        const parsed = LexiconSchema.safeParse(raw);
+        if (!parsed.success) return;
+        const l: Lexicon = parsed.data;
         setLex(l);
         setSource("server");
         try {

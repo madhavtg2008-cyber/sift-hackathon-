@@ -8,13 +8,13 @@
   --color-line2: #2e3541;
   --color-ink: #e8eaee;
   --color-muted: #8a93a3;
-  --color-faint: #5d6575;
+  --color-faint: #818793;
   --color-accent: #c8f169;
   --color-accent-ink: #12160a;
   --color-crit: #ff5f57;
   --color-high: #ff9d42;
   --color-med: #f5cf4b;
-  --color-low: #6b7383;
+  --color-low: #808794;
   --color-k-mention: #b79cff;
   --color-k-question: #6cc7ff;
   --color-k-action: #c8f169;
@@ -115,13 +115,13 @@ html[data-theme="paper"] {
   --color-line2: #d2c8b5;
   --color-ink: #1d1b17;
   --color-muted: #6b6457;
-  --color-faint: #9a917f;
+  --color-faint: #6c6659;
   --color-accent: #2f5d1e;
   --color-accent-ink: #ffffff;
   --color-crit: #c9302c;
   --color-high: #c2610c;
   --color-med: #a07a00;
-  --color-low: #8a8170;
+  --color-low: #6e675a;
   --color-k-mention: #6236d6;
   --color-k-question: #0b6aa8;
   --color-k-action: #3d6b12;
@@ -141,7 +141,7 @@ html[data-theme="chai"] {
   --color-line2: #4a3a2c;
   --color-ink: #f3e6d6;
   --color-muted: #b49e86;
-  --color-faint: #7d6a57;
+  --color-faint: #9a8b7c;
   --color-accent: #ffa53d;
   --color-accent-ink: #1a1006;
 }
@@ -154,7 +154,7 @@ html[data-theme="matcha"] {
   --color-line2: #2b4338;
   --color-ink: #e3efe8;
   --color-muted: #8fa89b;
-  --color-faint: #5e7a6c;
+  --color-faint: #7b9286;
   --color-accent: #7fe0a8;
   --color-accent-ink: #062014;
 }
@@ -167,7 +167,7 @@ html[data-theme="dusk"] {
   --color-line2: #3e2f4f;
   --color-ink: #efe6f4;
   --color-muted: #a796b5;
-  --color-faint: #6f5f80;
+  --color-faint: #92859e;
   --color-accent: #ff8a6b;
   --color-accent-ink: #2a0d05;
 }
@@ -180,7 +180,7 @@ html[data-theme="terminal"] {
   --color-line2: #263326;
   --color-ink: #c9f5d4;
   --color-muted: #6fa77f;
-  --color-faint: #3f6b4c;
+  --color-faint: #658970;
   --color-accent: #3dff7a;
   --color-accent-ink: #001a08;
   --font-sans: var(--font-geist-mono), ui-monospace, monospace;

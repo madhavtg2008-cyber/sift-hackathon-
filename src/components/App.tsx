@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAnalysis } from "@/hooks/useAnalysis";
 import { installNetguard, netguard } from "@/lib/netguard";
@@ -7,12 +8,9 @@ import { usePrefs } from "@/lib/prefs";
 import { useAppData, useLexicon } from "@/lib/store";
 import { ConversationView } from "./ConversationView";
 import { Digest } from "./Digest";
-import { ImportModal } from "./ImportModal";
 import { ListView, type ListFilter } from "./ListView";
-import { PrivacyPanel, useNetEvents } from "./PrivacyPanel";
-import { ProfileModal } from "./ProfileModal";
+import { useNetEvents } from "@/hooks/useNetEvents";
 import { SearchResults, searchChats } from "./SearchResults";
-import { SettingsModal } from "./SettingsModal";
 import { Sidebar, type View } from "./Sidebar";
 import { SignIn } from "./SignIn";
 import { UnlockScreen } from "./UnlockScreen";
@@ -22,6 +20,12 @@ import { MobileTabs } from "./MobileTabs";
 import { ToastStack, useToasts } from "./Toasts";
 import { takeSharedChat, type LoadedChat } from "@/lib/share";
 import type { ItemState } from "@/lib/types";
+
+// Dialogs are code-split: their code is only downloaded when first opened.
+const ImportModal = dynamic(() => import("./ImportModal").then((m) => m.ImportModal), { ssr: false });
+const SettingsModal = dynamic(() => import("./SettingsModal").then((m) => m.SettingsModal), { ssr: false });
+const ProfileModal = dynamic(() => import("./ProfileModal").then((m) => m.ProfileModal), { ssr: false });
+const PrivacyPanel = dynamic(() => import("./PrivacyPanel").then((m) => m.PrivacyPanel), { ssr: false });
 
 if (typeof window !== "undefined") installNetguard();
 
@@ -323,60 +327,68 @@ export default function App() {
         />
       )}
       <ToastStack toasts={toasts} dismiss={dismissToast} />
-      <ImportModal
-        open={importOpen}
-        initial={shared}
-        onClose={() => {
-          setImportOpen(false);
-          setShared(null);
-        }}
-        myName={data.profile.name}
-        onImport={(name, source, messages, readCount) => {
-          const id = actions.addConversation(name, source, messages, readCount);
-          openConv(id);
-        }}
-      />
-      <SettingsModal
-        open={profileOpen}
-        onClose={() => setProfileOpen(false)}
-        prefs={prefs}
-        onPrefs={updatePrefs}
-        onOpenPrivacy={() => {
-          setProfileOpen(false);
-          setPrivacyOpen(true);
-        }}
-      />
-      <ProfileModal
-        open={accountOpen}
-        onClose={() => setAccountOpen(false)}
-        profile={data.profile}
-        stats={{
-          chats: data.conversations.length,
-          messages: data.conversations.reduce((n, c) => n + c.messages.length, 0),
-          done: Object.values(data.items).filter((i) => i.done).length,
-        }}
-        onSave={actions.setProfile}
-        onLogout={() => {
-          setAccountOpen(false);
-          setView({ kind: "digest" });
-          actions.logout();
-        }}
-      />
-      <PrivacyPanel
-        open={privacyOpen}
-        onClose={() => setPrivacyOpen(false)}
-        data={data}
-        onWipe={() => {
-          actions.wipe();
-          setView({ kind: "digest" });
-        }}
-        onRestore={(d) => {
-          actions.importBackup(d);
-          setPrivacyOpen(false);
-        }}
-        vault={vault}
-        rulesSource={`${lex.version}, ${rulesSource === "server" ? "updated from server" : rulesSource}`}
-      />
+      {importOpen && (
+        <ImportModal
+          open={importOpen}
+          initial={shared}
+          onClose={() => {
+            setImportOpen(false);
+            setShared(null);
+          }}
+          myName={data.profile.name}
+          onImport={(name, source, messages, readCount) => {
+            const id = actions.addConversation(name, source, messages, readCount);
+            openConv(id);
+          }}
+        />
+      )}
+      {profileOpen && (
+        <SettingsModal
+          open={profileOpen}
+          onClose={() => setProfileOpen(false)}
+          prefs={prefs}
+          onPrefs={updatePrefs}
+          onOpenPrivacy={() => {
+            setProfileOpen(false);
+            setPrivacyOpen(true);
+          }}
+        />
+      )}
+      {accountOpen && (
+        <ProfileModal
+          open={accountOpen}
+          onClose={() => setAccountOpen(false)}
+          profile={data.profile}
+          stats={{
+            chats: data.conversations.length,
+            messages: data.conversations.reduce((n, c) => n + c.messages.length, 0),
+            done: Object.values(data.items).filter((i) => i.done).length,
+          }}
+          onSave={actions.setProfile}
+          onLogout={() => {
+            setAccountOpen(false);
+            setView({ kind: "digest" });
+            actions.logout();
+          }}
+        />
+      )}
+      {privacyOpen && (
+        <PrivacyPanel
+          open={privacyOpen}
+          onClose={() => setPrivacyOpen(false)}
+          data={data}
+          onWipe={() => {
+            actions.wipe();
+            setView({ kind: "digest" });
+          }}
+          onRestore={(d) => {
+            actions.importBackup(d);
+            setPrivacyOpen(false);
+          }}
+          vault={vault}
+          rulesSource={`${lex.version}, ${rulesSource === "server" ? "updated from server" : rulesSource}`}
+        />
+      )}
     </div>
   );
 }

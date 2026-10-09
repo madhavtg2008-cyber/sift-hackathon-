@@ -1,19 +1,6 @@
-import { NextResponse } from "next/server";
-import { DEFAULT_LEXICON } from "@/lib/lexicon";
+import { NextResponse, type NextRequest } from "next/server";
 
-export const dynamic = "force-dynamic";
-
-export function GET() {
-  return NextResponse.json({
-    ok: true,
-    service: "sift",
-    rulesVersion: DEFAULT_LEXICON.version,
-    time: new Date().toISOString(),
-    privacy: "This server never receives, stores or logs conversation data. All analysis runs on your device.",
-  });
-}
-
-/** The server refuses any payload outright and never reads or logs the body. */
-export function POST() {
-  return NextResponse.json({ ok: false, error: "Sift's server does not accept conversation data." }, { status: 403 });
-}
+/** Legacy path — permanently redirects to the versioned API (308 keeps the method). */
+const redirect = (req: NextRequest) => NextResponse.redirect(new URL("/api/v1/health", req.url), 308);
+export const GET = redirect;
+export const POST = redirect;

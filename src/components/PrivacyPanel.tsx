@@ -1,15 +1,12 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
-import { netguard, selfTest, serverSnapshot } from "@/lib/netguard";
+import { useState } from "react";
+import { useNetEvents } from "@/hooks/useNetEvents";
+import { netguard, selfTest } from "@/lib/netguard";
 import { storageBytes } from "@/lib/store";
 import type { AppData } from "@/lib/types";
 import { bytes, clockTime } from "@/lib/util";
 import { Button, inputCls, Modal } from "./ui";
-
-export function useNetEvents() {
-  return useSyncExternalStore(netguard.subscribe, netguard.snapshot, serverSnapshot);
-}
 
 export function PrivacyPanel({
   open,

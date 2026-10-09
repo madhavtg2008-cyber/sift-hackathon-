@@ -4,6 +4,7 @@ import { GeistMono } from "geist/font/mono";
 import "@fontsource/instrument-serif/400.css";
 import "@fontsource/instrument-serif/400-italic.css";
 import "./globals.css";
+import { PREFS_BOOT_SCRIPT } from "@/lib/prefs-shared";
 
 export const metadata: Metadata = {
   title: "Sift — catch up on chats, privately",
@@ -17,7 +18,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: PREFS_BOOT_SCRIPT }} />
+      </head>
       <body className="antialiased">
         {children}
       </body>

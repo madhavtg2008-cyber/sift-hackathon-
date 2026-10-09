@@ -24,10 +24,11 @@ export function KindChip({ kind, compact }: { kind: Kind; compact?: boolean }) {
   const m = KIND_META[kind];
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium leading-none"
+      title={m.label}
+      className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[0.6875rem] font-medium leading-none"
       style={{ color: m.color, background: `color-mix(in srgb, ${m.color} 13%, transparent)` }}
     >
-      <span className="font-mono text-[10px]">{m.icon}</span>
+      <span className="font-mono text-[0.625rem]">{m.icon}</span>
       {!compact && m.label}
     </span>
   );
@@ -37,7 +38,7 @@ export function PriorityPill({ priority, score }: { priority: Priority; score?: 
   const m = PRIORITY_META[priority];
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium"
+      className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[0.6875rem] font-medium"
       style={{ color: m.color, borderColor: `color-mix(in srgb, ${m.color} 35%, transparent)` }}
       title={score !== undefined ? `Priority score ${score}/100` : undefined}
     >
@@ -67,8 +68,8 @@ export function Avatar({ name, size = 28 }: { name: string; size?: number }) {
         width: size,
         height: size,
         fontSize: size * 0.38,
-        background: `hsl(${h} 45% 22%)`,
-        color: `hsl(${h} 80% 78%)`,
+        background: `hsl(${h} 45% var(--av-bg-l))`,
+        color: `hsl(${h} 70% var(--av-fg-l))`,
       }}
       aria-hidden
     >
@@ -138,7 +139,7 @@ export function Modal({
   }, [open, onClose]);
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[var(--overlay)] p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={onClose}>
       <div
         role="dialog"
         aria-modal
@@ -147,7 +148,7 @@ export function Modal({
         className={`rise max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-line bg-panel shadow-2xl sm:rounded-2xl ${wide ? "sm:max-w-3xl" : "sm:max-w-lg"}`}
       >
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-panel px-5 py-3.5">
-          <h2 className="text-[15px] font-semibold">{title}</h2>
+          <h2 className="text-[0.9375rem] font-semibold">{title}</h2>
           <button onClick={onClose} className="rounded-md px-2 py-1 text-muted hover:bg-panel2 hover:text-ink" aria-label="Close">
             ✕
           </button>
@@ -163,7 +164,7 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
     <label className="block">
       <span className="mb-1.5 block text-xs font-medium text-muted">{label}</span>
       {children}
-      {hint && <span className="mt-1 block text-[11px] text-faint">{hint}</span>}
+      {hint && <span className="mt-1 block text-[0.6875rem] text-faint">{hint}</span>}
     </label>
   );
 }

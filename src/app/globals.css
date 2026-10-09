@@ -99,3 +99,107 @@ body {
     animation: none;
   }
 }
+
+/* ---------------- themes ---------------- */
+:root {
+  --av-bg-l: 22%;
+  --av-fg-l: 78%;
+  --overlay: rgb(0 0 0 / 0.6);
+}
+
+html[data-theme="paper"] {
+  --color-bg: #f4f0e8;
+  --color-panel: #fbf9f4;
+  --color-panel2: #efe9dd;
+  --color-line: #e2dacb;
+  --color-line2: #d2c8b5;
+  --color-ink: #1d1b17;
+  --color-muted: #6b6457;
+  --color-faint: #9a917f;
+  --color-accent: #2f5d1e;
+  --color-accent-ink: #ffffff;
+  --color-crit: #c9302c;
+  --color-high: #c2610c;
+  --color-med: #a07a00;
+  --color-low: #8a8170;
+  --color-k-mention: #6236d6;
+  --color-k-question: #0b6aa8;
+  --color-k-action: #3d6b12;
+  --color-k-decision: #0f7a63;
+  --color-k-deadline: #b45309;
+  --color-k-urgent: #c9302c;
+  --av-bg-l: 86%;
+  --av-fg-l: 28%;
+  --overlay: rgb(40 32 20 / 0.35);
+}
+
+html[data-theme="chai"] {
+  --color-bg: #1a1410;
+  --color-panel: #231b15;
+  --color-panel2: #2c221a;
+  --color-line: #3a2d22;
+  --color-line2: #4a3a2c;
+  --color-ink: #f3e6d6;
+  --color-muted: #b49e86;
+  --color-faint: #7d6a57;
+  --color-accent: #ffa53d;
+  --color-accent-ink: #1a1006;
+}
+
+html[data-theme="matcha"] {
+  --color-bg: #0c1411;
+  --color-panel: #121d18;
+  --color-panel2: #18261f;
+  --color-line: #20332a;
+  --color-line2: #2b4338;
+  --color-ink: #e3efe8;
+  --color-muted: #8fa89b;
+  --color-faint: #5e7a6c;
+  --color-accent: #7fe0a8;
+  --color-accent-ink: #062014;
+}
+
+html[data-theme="dusk"] {
+  --color-bg: #140f1a;
+  --color-panel: #1c1524;
+  --color-panel2: #251c30;
+  --color-line: #30243d;
+  --color-line2: #3e2f4f;
+  --color-ink: #efe6f4;
+  --color-muted: #a796b5;
+  --color-faint: #6f5f80;
+  --color-accent: #ff8a6b;
+  --color-accent-ink: #2a0d05;
+}
+
+html[data-theme="terminal"] {
+  --color-bg: #000000;
+  --color-panel: #0a0d0a;
+  --color-panel2: #111611;
+  --color-line: #1b241b;
+  --color-line2: #263326;
+  --color-ink: #c9f5d4;
+  --color-muted: #6fa77f;
+  --color-faint: #3f6b4c;
+  --color-accent: #3dff7a;
+  --color-accent-ink: #001a08;
+  --font-sans: var(--font-geist-mono), ui-monospace, monospace;
+}
+html[data-theme="terminal"] body {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+html[data-mode="light"] .grain {
+  background-image: none;
+}
+
+/* text size */
+html[data-size="s"] { font-size: 14.5px; }
+html[data-size="m"] { font-size: 16px; }
+html[data-size="l"] { font-size: 17.5px; }
+
+/* headline style */
+html[data-headline="sans"] { --font-display: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif; }
+html[data-headline="mono"] { --font-display: var(--font-geist-mono), ui-monospace, monospace; }
+html[data-headline="sans"] .font-display,
+html[data-headline="mono"] .font-display { font-style: normal; letter-spacing: -0.02em; }

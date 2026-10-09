@@ -3,7 +3,7 @@
 import type { ConvAnalysis, Conversation, Insight, ItemState, Profile } from "@/lib/types";
 import { relTime } from "@/lib/util";
 import { InsightCard, type InsightActions } from "./InsightCard";
-import { Button, Empty, PriorityDot, PRIORITY_META } from "./ui";
+import { Button, Empty } from "./ui";
 
 function greeting() {
   const h = new Date().getHours();
@@ -17,11 +17,11 @@ export function Digest({
   visible,
   items,
   actions,
-  openConv,
   openList,
   markAllRead,
   onImport,
   onDemo,
+  showReasons,
 }: {
   profile: Profile;
   conversations: Conversation[];
@@ -34,6 +34,7 @@ export function Digest({
   markAllRead: () => void;
   onImport: () => void;
   onDemo: () => void;
+  showReasons?: boolean;
 }) {
   if (!conversations.length)
     return (
@@ -76,10 +77,6 @@ export function Digest({
   const highlightWords = unreadHighlights.reduce((w, i) => w + i.text.split(/\s+/).length, 0);
   const savedMin = Math.max(0, (unreadWords - highlightWords) / 200 + (unreadTotal - unreadHighlights.length) * 0.05);
 
-  const ranked = conversations
-    .map((c) => ({ c, a: analyses.get(c.id)! }))
-    .filter((x) => x.a)
-    .sort((x, y) => Number(!!y.c.pinned) - Number(!!x.c.pinned) || y.a.score - x.a.score);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 sm:px-8 sm:py-8">
@@ -87,7 +84,7 @@ export function Digest({
         <p className="text-sm text-muted">
           {greeting()}, {profile.name}.
         </p>
-        <h1 className="mt-1 font-display text-[34px] leading-[1.1] sm:text-[44px]">
+        <h1 className="mt-1 font-display text-[2.125rem] leading-[1.1] sm:text-[2.75rem]">
           {needsYou.length ? (
             <>
               <span className="italic text-accent">{needsYou.length}</span> thing{needsYou.length === 1 ? "" : "s"} need you
@@ -151,12 +148,12 @@ export function Digest({
           </div>
           {needsYou.length ? (
             <div className="space-y-2.5">
-              {needsYou.slice(0, 8).map((i, idx) => (
-                <InsightCard key={i.key} insight={i} state={items[i.key]} actions={actions} index={idx} />
+              {needsYou.slice(0, 5).map((i, idx) => (
+                <InsightCard key={i.key} insight={i} state={items[i.key]} actions={actions} index={idx} showReasons={showReasons} />
               ))}
-              {needsYou.length > 8 && (
+              {needsYou.length > 5 && (
                 <button onClick={() => openList("action")} className="w-full rounded-xl py-2 text-sm text-muted hover:bg-panel hover:text-ink">
-                  + {needsYou.length - 8} more
+                  See {needsYou.length - 5} more →
                 </button>
               )}
             </div>
@@ -171,10 +168,10 @@ export function Digest({
               <h2 className="mb-3 mt-8 text-sm font-semibold uppercase tracking-wider text-muted">Mentions you may have missed</h2>
               <div className="space-y-2.5">
                 {missed
-                  .filter((i) => !needsYou.slice(0, 8).includes(i))
-                  .slice(0, 4)
+                  .filter((i) => !needsYou.slice(0, 5).includes(i))
+                  .slice(0, 3)
                   .map((i, idx) => (
-                    <InsightCard key={i.key} insight={i} state={items[i.key]} actions={actions} index={idx} />
+                    <InsightCard key={i.key} insight={i} state={items[i.key]} actions={actions} index={idx} showReasons={showReasons} />
                   ))}
               </div>
             </>
@@ -186,19 +183,19 @@ export function Digest({
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted">Timeline</h2>
             {deadlines.length ? (
               <ol className="relative space-y-3 border-l border-line pl-4">
-                {deadlines.slice(0, 7).map((i) => (
+                {deadlines.slice(0, 5).map((i) => (
                   <li key={i.key} className="relative">
                     <span
                       className="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full border-2 border-bg"
                       style={{ background: i.due!.overdue ? "var(--color-crit)" : "var(--color-k-deadline)" }}
                     />
                     <button onClick={() => actions.open(i.convId, i.msgId)} className="text-left">
-                      <p className={`font-mono text-[11px] ${i.due!.overdue ? "text-crit" : "text-k-deadline"}`}>
+                      <p className={`font-mono text-[0.6875rem] ${i.due!.overdue ? "text-crit" : "text-k-deadline"}`}>
                         {i.due!.overdue ? "OVERDUE · " : ""}
                         {i.due!.label}
                       </p>
-                      <p className="line-clamp-2 text-[13px] leading-snug hover:text-accent">{i.text}</p>
-                      <p className="text-[11px] text-faint">{i.convName}</p>
+                      <p className="line-clamp-2 text-[0.8125rem] leading-snug hover:text-accent">{i.text}</p>
+                      <p className="text-[0.6875rem] text-faint">{i.convName}</p>
                     </button>
                   </li>
                 ))}
@@ -212,17 +209,17 @@ export function Digest({
             <section>
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted">Decisions</h2>
               <ul className="space-y-2">
-                {decisions.slice(0, 4).map((i) => (
+                {decisions.slice(0, 3).map((i) => (
                   <li key={i.key}>
                     <button
                       onClick={() => actions.open(i.convId, i.msgId)}
                       className="w-full rounded-xl border border-line bg-panel p-3 text-left hover:border-line2"
                     >
-                      <p className="line-clamp-3 text-[13px] leading-snug">
+                      <p className="line-clamp-3 text-[0.8125rem] leading-snug">
                         <span className="text-k-decision">◆ </span>
                         {i.text}
                       </p>
-                      <p className="mt-1 text-[11px] text-faint">
+                      <p className="mt-1 text-[0.6875rem] text-faint">
                         {i.author} · {i.convName} · {relTime(i.ts)}
                       </p>
                     </button>
@@ -234,31 +231,6 @@ export function Digest({
         </aside>
       </div>
 
-      <section className="mt-10">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted">Chats by priority</h2>
-        <div className="grid gap-2.5 sm:grid-cols-2">
-          {ranked.map(({ c, a }) => (
-            <button
-              key={c.id}
-              onClick={() => openConv(c.id)}
-              className="rise flex flex-col rounded-2xl border border-line bg-panel p-4 text-left transition hover:border-line2"
-            >
-              <div className="flex items-center gap-2">
-                <PriorityDot priority={a.priority} />
-                <span className="truncate font-medium">{c.name}</span>
-                {c.pinned && <span className="text-xs text-med">★</span>}
-                <span className="ml-auto shrink-0 font-mono text-xs" style={{ color: PRIORITY_META[a.priority].color }}>
-                  {a.score}
-                </span>
-                {a.unread > 0 && (
-                  <span className="shrink-0 rounded-full bg-accent px-1.5 text-[11px] font-semibold text-accent-ink">{a.unread}</span>
-                )}
-              </div>
-              <p className="mt-2 line-clamp-2 text-[13px] leading-snug text-muted">{a.summary[1] ?? a.summary[0]}</p>
-            </button>
-          ))}
-        </div>
-      </section>
     </div>
   );
 }

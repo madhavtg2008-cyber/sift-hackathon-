@@ -12,7 +12,9 @@ import { ImportModal } from "./ImportModal";
 import { ListView, type ListFilter } from "./ListView";
 import { PrivacyPanel, useNetEvents } from "./PrivacyPanel";
 import { ProfileForm } from "./ProfileForm";
-import { Avatar, Button, KIND_META, Modal, PriorityDot } from "./ui";
+import { SettingsModal } from "./SettingsModal";
+import { Avatar, Button, KIND_META, PriorityDot } from "./ui";
+import { usePrefs } from "@/lib/prefs";
 
 if (typeof window !== "undefined") installNetguard();
 
@@ -21,6 +23,7 @@ type View = { kind: "digest" } | { kind: "list"; filter: ListFilter } | { kind: 
 export default function App() {
   const { data, actions } = useAppData();
   const { lex, source: rulesSource } = useLexicon();
+  const { prefs, update: updatePrefs } = usePrefs();
   const [view, setView] = useState<View>({ kind: "digest" });
   const [now, setNow] = useState(() => Date.now());
   const [importOpen, setImportOpen] = useState(false);
@@ -106,7 +109,7 @@ export default function App() {
           <h1 className="mt-8 font-display text-5xl leading-[1.05]">
             Too many chats. <span className="italic text-accent">Only what matters.</span>
           </h1>
-          <p className="mt-4 text-[15px] leading-relaxed text-muted">
+          <p className="mt-4 text-[0.9375rem] leading-relaxed text-muted">
             Sift reads your group chats and pulls out mentions, decisions, deadlines and tasks you missed — ranked by urgency.
             It runs entirely on this device: your conversations never touch a server.
           </p>
@@ -161,7 +164,7 @@ export default function App() {
 
       <div className="min-h-0 flex-1">
         <div className="mb-2 flex items-center justify-between px-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-faint">Chats</span>
+          <span className="text-[0.6875rem] font-semibold uppercase tracking-wider text-faint">Chats</span>
           <button onClick={() => setImportOpen(true)} className="rounded-md px-1.5 text-sm text-muted hover:bg-panel2 hover:text-ink" aria-label="Add conversation">
             +
           </button>
@@ -181,16 +184,16 @@ export default function App() {
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-1.5">
                     {a && <PriorityDot priority={a.priority} />}
-                    <span className={`truncate text-[13px] ${a?.unread ? "font-semibold text-ink" : "text-muted"}`}>{c.name}</span>
-                    {c.pinned && <span className="text-[10px] text-med">★</span>}
+                    <span className={`truncate text-[0.8125rem] ${a?.unread ? "font-semibold text-ink" : "text-muted"}`}>{c.name}</span>
+                    {c.pinned && <span className="text-[0.625rem] text-med">★</span>}
                   </span>
-                  <span className="mt-0.5 block truncate text-[11.5px] text-faint">
+                  <span className="mt-0.5 block truncate text-[0.7188rem] text-faint">
                     {last ? `${last.author.split(" ")[0]}: ${last.text}` : "No messages"}
                   </span>
                 </span>
                 <span className="flex shrink-0 flex-col items-end gap-1">
-                  <span className="text-[10px] text-faint">{last ? relTime(last.ts, now) : ""}</span>
-                  {!!a?.unread && <span className="rounded-full bg-accent px-1.5 text-[10px] font-bold text-accent-ink">{a.unread}</span>}
+                  <span className="text-[0.625rem] text-faint">{last ? relTime(last.ts, now) : ""}</span>
+                  {!!a?.unread && <span className="rounded-full bg-accent px-1.5 text-[0.625rem] font-bold text-accent-ink">{a.unread}</span>}
                 </span>
               </button>
             );
@@ -203,13 +206,20 @@ export default function App() {
         </div>
       </div>
 
-      <div className="space-y-2 border-t border-line pt-3 text-[11px] text-faint">
-        <button onClick={() => setProfileOpen(true)} className="flex w-full items-center gap-2 rounded-lg px-1 py-1 text-left hover:text-ink">
-          <Avatar name={data.profile.name} size={22} />
-          <span className="flex-1 truncate text-xs text-muted">{data.profile.name}</span>
-          <span>Settings</span>
+      <div className="space-y-2 border-t border-line pt-3 text-[0.6875rem] text-faint">
+        <button
+          onClick={() => {
+            setProfileOpen(true);
+            setNavOpen(false);
+          }}
+          className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left hover:bg-panel2"
+        >
+          <Avatar name={data.profile.name} size={26} />
+          <span className="flex-1 truncate text-sm text-ink">{data.profile.name}</span>
+          <span className="flex items-center gap-1 text-xs text-muted">
+            <GearIcon /> Settings
+          </span>
         </button>
-        <p className="px-1">Rules {lex.version} · {rulesSource}</p>
       </div>
     </nav>
   );
@@ -235,11 +245,11 @@ export default function App() {
         </div>
         <button
           onClick={() => setPrivacyOpen(true)}
-          className="hidden shrink-0 items-center gap-2 rounded-full border border-accent/30 bg-accent/5 px-3 py-1.5 text-xs text-accent hover:bg-accent/10 sm:flex"
-          title="Privacy & data"
+          className="hidden shrink-0 items-center gap-1.5 rounded-full border border-accent/30 px-3 py-1.5 text-xs text-accent hover:bg-accent/10 sm:flex"
+          title="0 bytes of chat data have left this device. Click for details."
         >
           <ShieldIcon />
-          On-device · 0 B of chat sent{blockedCount ? ` · ${blockedCount} blocked` : ""}
+          On-device{blockedCount ? ` · ${blockedCount} blocked` : ""}
         </button>
         <button onClick={() => setPrivacyOpen(true)} className="text-accent sm:hidden" aria-label="Privacy">
           <ShieldIcon />
@@ -253,7 +263,7 @@ export default function App() {
         <aside className="hidden w-72 shrink-0 border-r border-line lg:block">{nav}</aside>
         {navOpen && (
           <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setNavOpen(false)}>
-            <div className="absolute inset-0 bg-black/60" />
+            <div className="absolute inset-0 bg-[var(--overlay)]" />
             <aside className="rise absolute inset-y-0 left-0 w-80 max-w-[85vw] border-r border-line bg-panel" onClick={(e) => e.stopPropagation()}>
               {nav}
             </aside>
@@ -288,6 +298,7 @@ export default function App() {
               profile={data.profile}
               focusMsgId={view.focus ? `${view.focus}` : undefined}
               isMe={ctx.isMe}
+              focusMode={prefs.focusMode}
               actions={{
                 ...actions,
                 deleteConversation: (id) => {
@@ -298,7 +309,7 @@ export default function App() {
               onBack={() => setView({ kind: "digest" })}
             />
           ) : view.kind === "list" ? (
-            <ListView key={view.filter} filter={view.filter} all={allInsights} items={data.items} actions={insightActions} />
+            <ListView key={view.filter} filter={view.filter} all={allInsights} items={data.items} actions={insightActions} showReasons={prefs.showReasons} />
           ) : (
             <Digest
               profile={data.profile}
@@ -312,6 +323,7 @@ export default function App() {
               markAllRead={actions.markAllRead}
               onImport={() => setImportOpen(true)}
               onDemo={() => void loadDemo().catch(() => setImportOpen(true))}
+              showReasons={prefs.showReasons}
             />
           )}
         </main>
@@ -327,15 +339,21 @@ export default function App() {
         }}
         onLoadDemo={loadDemo}
       />
-      <Modal open={profileOpen} onClose={() => setProfileOpen(false)} title="Your settings">
-        <ProfileForm
-          initial={data.profile}
-          onSave={(p) => {
-            actions.setProfile(p);
-            setProfileOpen(false);
-          }}
-        />
-      </Modal>
+      <SettingsModal
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+        prefs={prefs}
+        onPrefs={updatePrefs}
+        profile={data.profile}
+        onProfile={(p) => {
+          actions.setProfile(p);
+          setProfileOpen(false);
+        }}
+        onOpenPrivacy={() => {
+          setProfileOpen(false);
+          setPrivacyOpen(true);
+        }}
+      />
       <PrivacyPanel
         open={privacyOpen}
         onClose={() => setPrivacyOpen(false)}
@@ -348,7 +366,7 @@ export default function App() {
           actions.importBackup(d);
           setPrivacyOpen(false);
         }}
-        rulesSource={rulesSource === "server" ? "updated from server" : rulesSource}
+        rulesSource={`${lex.version}, ${rulesSource === "server" ? "updated from server" : rulesSource}`}
       />
     </div>
   );
@@ -364,7 +382,7 @@ function NavItem({ active, onClick, icon, iconColor, label, count }: { active: b
         {icon}
       </span>
       <span className="flex-1 text-left">{label}</span>
-      {!!count && <span className="font-mono text-[11px] text-faint">{count}</span>}
+      {!!count && <span className="font-mono text-[0.6875rem] text-faint">{count}</span>}
     </button>
   );
 }
@@ -389,6 +407,20 @@ function Logo() {
       </svg>
       <span className="font-display text-2xl italic leading-none">sift</span>
     </span>
+  );
+}
+
+function GearIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden>
+      <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path
+        d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+    </svg>
   );
 }
 

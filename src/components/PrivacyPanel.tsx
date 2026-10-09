@@ -72,7 +72,7 @@ export function PrivacyPanel({
           ["Stored on this device", bytes(storageBytes()), "text-ink"],
         ].map(([l, v, c]) => (
           <div key={l} className="rounded-xl border border-line bg-bg p-3">
-            <p className="text-[11px] text-muted">{l}</p>
+            <p className="text-[0.6875rem] text-muted">{l}</p>
             <p className={`mt-1 font-mono text-xl ${c}`}>{v}</p>
           </div>
         ))}
@@ -106,7 +106,7 @@ export function PrivacyPanel({
               Clear
             </Button>
           </div>
-          <div className="mt-2 max-h-56 overflow-y-auto rounded-lg border border-line bg-bg font-mono text-[11px]">
+          <div className="mt-2 max-h-56 overflow-y-auto rounded-lg border border-line bg-bg font-mono text-[0.6875rem]">
             {events.length === 0 ? (
               <p className="p-3 text-faint">No requests yet.</p>
             ) : (
@@ -122,7 +122,7 @@ export function PrivacyPanel({
               ))
             )}
           </div>
-          <p className="mt-1.5 text-[11px] text-faint">{bytes(sentBytes)} of request bodies sent — none contained chat content.</p>
+          <p className="mt-1.5 text-[0.6875rem] text-faint">{bytes(sentBytes)} of request bodies sent — none contained chat content.</p>
 
           <div className="mt-4 rounded-lg border border-line bg-bg p-3">
             <p className="text-sm font-medium">Leak test</p>

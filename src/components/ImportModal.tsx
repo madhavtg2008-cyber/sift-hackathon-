@@ -136,7 +136,7 @@ export function ImportModal({
                 onChange={(e) => setText(e.target.value)}
                 rows={9}
                 placeholder={EXAMPLE}
-                className={`${inputCls} font-mono text-[12.5px] leading-relaxed`}
+                className={`${inputCls} font-mono text-[0.7812rem] leading-relaxed`}
               />
             </Field>
           ) : (
@@ -203,7 +203,7 @@ export function ImportModal({
               <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Project team" className={inputCls} />
             </Field>
             <label className="flex h-9 items-center gap-2 text-sm text-muted">
-              <input type="checkbox" checked={allUnread} onChange={(e) => setAllUnread(e.target.checked)} className="accent-[#c8f169]" />
+              <input type="checkbox" checked={allUnread} onChange={(e) => setAllUnread(e.target.checked)} className="accent-[var(--color-accent)]" />
               Treat all as unread
             </label>
           </div>

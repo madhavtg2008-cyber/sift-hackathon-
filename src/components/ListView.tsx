@@ -20,7 +20,9 @@ export function ListView({
   all,
   items,
   actions,
+  showReasons,
 }: {
+  showReasons?: boolean;
   filter: ListFilter;
   all: Insight[];
   items: Record<string, ItemState>;
@@ -85,12 +87,12 @@ export function ListView({
           <option value="recent">Sort: most recent</option>
         </select>
         <label className="ml-auto flex items-center gap-1.5 text-muted">
-          <input type="checkbox" checked={showDone} onChange={(e) => setShowDone(e.target.checked)} className="accent-[#c8f169]" />
+          <input type="checkbox" checked={showDone} onChange={(e) => setShowDone(e.target.checked)} className="accent-[var(--color-accent)]" />
           Show done ({doneCount})
         </label>
         {snoozedCount > 0 && (
           <label className="flex items-center gap-1.5 text-muted">
-            <input type="checkbox" checked={showSnoozed} onChange={(e) => setShowSnoozed(e.target.checked)} className="accent-[#c8f169]" />
+            <input type="checkbox" checked={showSnoozed} onChange={(e) => setShowSnoozed(e.target.checked)} className="accent-[var(--color-accent)]" />
             Snoozed ({snoozedCount})
           </label>
         )}
@@ -98,7 +100,7 @@ export function ListView({
 
       <div className="mt-4 space-y-2.5">
         {list.length ? (
-          list.map((i, idx) => <InsightCard key={i.key} insight={i} state={items[i.key]} actions={actions} index={idx} />)
+          list.map((i, idx) => <InsightCard key={i.key} insight={i} state={items[i.key]} actions={actions} index={idx} showReasons={showReasons} />)
         ) : (
           <Empty
             title="All clear"

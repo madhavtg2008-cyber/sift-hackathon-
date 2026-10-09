@@ -7,10 +7,43 @@ import { escapeRegex } from "./util";
  * nothing in here touches the network.
  */
 
+const DAY_MS = 86_400_000;
+
+/**
+ * Score contributions (0–100 scale). Relevance signals (is it for me?) and urgency signals
+ * (deadline proximity, tone) add up; the result is clamped to 1–100.
+ */
+export const WEIGHTS = {
+  mention: 30, // @name or nickname
+  groupCallout: 15, // @everyone / "guys" with real content
+  question: 18, // a question directed at me
+  unanswered: 12, // …that I haven't replied to
+  commitment: 22, // something I promised ("I'll do it")
+  taskForMe: 25,
+  taskForGroup: 16,
+  taskSmallGroup: 14, // unaddressed ask in a chat with ≤ 3 others
+  taskOther: 6, // someone else's task
+  decision: 18,
+  deadline: 10,
+  overdue: 25,
+  dueWithin24h: 22,
+  dueWithin72h: 12,
+  urgent: 18,
+  vip: 10,
+  keyword: 8,
+  keywordMax: 16,
+  unread: 8,
+  staleRead: -10, // read and older than a week
+  notForMe: -5,
+} as const;
+
+/** Minimum score for each priority bucket. */
+export const PRIORITY_THRESHOLDS = { critical: 70, high: 48, medium: 28 } as const;
+
 export function priorityOf(score: number): Priority {
-  if (score >= 70) return "critical";
-  if (score >= 48) return "high";
-  if (score >= 28) return "medium";
+  if (score >= PRIORITY_THRESHOLDS.critical) return "critical";
+  if (score >= PRIORITY_THRESHOLDS.high) return "high";
+  if (score >= PRIORITY_THRESHOLDS.medium) return "medium";
   return "low";
 }
 
@@ -91,11 +124,11 @@ export function analyzeConversation(conv: Conversation, ctx: Ctx, items: Record<
 
     if (mentioned) {
       kinds.add("mention");
-      score += 30;
+      score += WEIGHTS.mention;
       reasons.push("Mentions you");
     } else if (forGroup) {
       kinds.add("mention");
-      score += 15;
+      score += WEIGHTS.groupCallout;
       reasons.push("Group callout");
     }
 
@@ -105,10 +138,10 @@ export function analyzeConversation(conv: Conversation, ctx: Ctx, items: Record<
     const isQuestion = text.includes("?") || QUESTION_START.test(text.trim());
     if (isQuestion && !fromMe && (directed || forGroup) && !/^\s*(ok|okay|right|really|lol|haha)\b.*\?$/i.test(text)) {
       kinds.add("question");
-      score += 18;
+      score += WEIGHTS.question;
       reasons.push(directed ? "Asks you a question" : "Question to the group");
       if (!answered && directed) {
-        score += 12;
+        score += WEIGHTS.unanswered;
         reasons.push("You haven't replied");
       }
     }
@@ -124,19 +157,19 @@ export function analyzeConversation(conv: Conversation, ctx: Ctx, items: Record<
     let forMe = directed || forGroup || commitment;
     if (commitment) {
       kinds.add("action");
-      score += 22;
+      score += WEIGHTS.commitment;
       reasons.push("You committed to this");
     } else if (!fromMe && (actionHit || startsImperative)) {
       kinds.add("action");
       if (directed || forGroup) {
-        score += directed ? 25 : 16;
+        score += directed ? WEIGHTS.taskForMe : WEIGHTS.taskForGroup;
         reasons.push(directed ? "Action item for you" : "Action item for everyone");
       } else if (smallGroup && !mentionsSomeoneElse) {
-        score += 14;
+        score += WEIGHTS.taskSmallGroup;
         forMe = true;
         reasons.push("Ask to the group (small chat)");
       } else {
-        score += 6;
+        score += WEIGHTS.taskOther;
         reasons.push(mentionsSomeoneElse ? "Task for someone else" : "Action item");
         forMe = false;
       }
@@ -145,7 +178,7 @@ export function analyzeConversation(conv: Conversation, ctx: Ctx, items: Record<
     // Decisions
     if (ctx.decisionRe.test(lower)) {
       kinds.add("decision");
-      score += 18;
+      score += WEIGHTS.decision;
       reasons.push("Decision");
     }
 
@@ -153,19 +186,19 @@ export function analyzeConversation(conv: Conversation, ctx: Ctx, items: Record<
     const due = parseDue(text, msg.ts, ctx.now);
     if (due) {
       kinds.add("deadline");
-      score += 10;
+      score += WEIGHTS.deadline;
       const relevant = forMe || kinds.has("action") || kinds.has("decision");
       const left = due.ts - ctx.now;
       const st = items[`${conv.id}:${msg.id}`];
       if (relevant && !st?.done) {
         if (due.overdue) {
-          score += 25;
+          score += WEIGHTS.overdue;
           reasons.push(`Overdue (${due.label})`);
         } else if (left < 24 * 3_600_000) {
-          score += 22;
+          score += WEIGHTS.dueWithin24h;
           reasons.push(`Due ${due.label}`);
         } else if (left < 72 * 3_600_000) {
-          score += 12;
+          score += WEIGHTS.dueWithin72h;
           reasons.push(`Due ${due.label}`);
         } else reasons.push(`Due ${due.label}`);
       } else {
@@ -178,7 +211,7 @@ export function analyzeConversation(conv: Conversation, ctx: Ctx, items: Record<
     const shouting = letters.length > 8 && letters.replace(/[^A-Z]/g, "").length / letters.length > 0.7;
     if (!fromMe && (ctx.urgentRe.test(lower) || /!!/.test(text) || shouting)) {
       kinds.add("urgent");
-      score += 18;
+      score += WEIGHTS.urgent;
       reasons.push("Urgent tone");
     }
 
@@ -193,17 +226,17 @@ export function analyzeConversation(conv: Conversation, ctx: Ctx, items: Record<
 
     const author = msg.author.toLowerCase();
     if (ctx.vips.some((v) => author === v || author.split(/\s+/)[0] === v)) {
-      score += 10;
+      score += WEIGHTS.vip;
       reasons.push(`From VIP`);
     }
     const kw = ctx.keywords.filter((k) => lower.includes(k));
     if (kw.length) {
-      score += Math.min(16, kw.length * 8);
+      score += Math.min(WEIGHTS.keywordMax, kw.length * WEIGHTS.keyword);
       reasons.push(`Keyword: ${kw.slice(0, 2).join(", ")}`);
     }
-    if (unread) score += 8;
-    if (!unread && ctx.now - msg.ts > 7 * 86_400_000) score -= 10;
-    if (!forMe && !kinds.has("decision") && !kinds.has("urgent")) score -= 5;
+    if (unread) score += WEIGHTS.unread;
+    if (!unread && ctx.now - msg.ts > 7 * DAY_MS) score += WEIGHTS.staleRead;
+    if (!forMe && !kinds.has("decision") && !kinds.has("urgent")) score += WEIGHTS.notForMe;
 
     score = Math.max(1, Math.min(100, Math.round(score)));
     insights.push({
@@ -228,7 +261,7 @@ export function analyzeConversation(conv: Conversation, ctx: Ctx, items: Record<
   const unreadCount = conv.messages.filter((m, i) => i > conv.lastReadIndex && !ctx.isMe(m.author)).length;
   const open = insights.filter((i) => !items[i.key]?.done && !items[i.key]?.dismissed);
   const top = open.reduce((m, i) => Math.max(m, i.score), 0);
-  const highCount = open.filter((i) => i.score >= 48 && i.unread).length;
+  const highCount = open.filter((i) => i.score >= PRIORITY_THRESHOLDS.high && i.unread).length;
   const score = Math.min(100, top + highCount * 3 + (unreadCount ? 4 : 0));
   const needsReply = open.filter(
     (i) => i.kinds.includes("question") && i.forMe && !i.answered && !i.reasons.includes("Question to the group"),

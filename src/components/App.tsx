@@ -33,6 +33,7 @@ export default function App() {
   const [navOpen, setNavOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
+  const [renaming, setRenaming] = useState<{ id: string; draft: string } | null>(null);
   const [accountOpen, setAccountOpen] = useState(false);
   const [returning, setReturning] = useState<Profile | null>(null);
   useEffect(() => {
@@ -269,6 +270,35 @@ export default function App() {
               const a = analyses.get(c.id);
               const last = c.messages[c.messages.length - 1];
               const active = view.kind === "conv" && view.id === c.id;
+              if (renaming?.id === c.id)
+                return (
+                  <form
+                    key={c.id}
+                    className="flex items-center gap-1.5 rounded-lg border border-accent/50 bg-panel2 px-2 py-1.5"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (renaming.draft.trim()) actions.renameConversation(c.id, renaming.draft.trim());
+                      setRenaming(null);
+                    }}
+                  >
+                    <input
+                      autoFocus
+                      value={renaming.draft}
+                      onChange={(e) => setRenaming({ id: c.id, draft: e.target.value })}
+                      onKeyDown={(e) => e.key === "Escape" && setRenaming(null)}
+                      onFocus={(e) => e.target.select()}
+                      maxLength={60}
+                      aria-label="New chat name"
+                      className="min-w-0 flex-1 bg-transparent px-1 text-[0.8125rem] text-ink outline-none"
+                    />
+                    <button type="submit" className="rounded-md bg-accent px-2 py-0.5 text-xs font-semibold text-accent-ink">
+                      Save
+                    </button>
+                    <button type="button" onClick={() => setRenaming(null)} className="rounded-md px-1.5 text-xs text-muted hover:text-ink" aria-label="Cancel">
+                      ✕
+                    </button>
+                  </form>
+                );
               if (confirmDel === c.id)
                 return (
                   <div key={c.id} className="rounded-lg border border-crit/40 bg-crit/10 px-2.5 py-2">
@@ -315,14 +345,30 @@ export default function App() {
                     <span className="text-[0.625rem] text-faint">{last ? relTime(last.ts, now) : ""}</span>
                     {!!a?.unread && <span className="rounded-full bg-accent px-1.5 text-[0.625rem] font-bold text-accent-ink">{a.unread}</span>}
                   </span>
-                  <button
-                    onClick={() => setConfirmDel(c.id)}
-                    className="absolute right-1.5 top-1/2 z-10 -translate-y-1/2 rounded-md p-1.5 text-muted opacity-0 transition hover:bg-crit/15 hover:text-crit focus:opacity-100 group-hover:opacity-100 max-lg:opacity-60"
-                    aria-label={`Delete ${c.name}`}
-                    title="Delete chat"
-                  >
-                    <TrashIcon />
-                  </button>
+                  <span className="absolute right-1.5 top-1/2 z-10 flex -translate-y-1/2 gap-0.5 opacity-0 transition focus-within:opacity-100 group-hover:opacity-100 max-lg:opacity-60">
+                    <button
+                      onClick={() => {
+                        setConfirmDel(null);
+                        setRenaming({ id: c.id, draft: c.name });
+                      }}
+                      className="rounded-md p-1.5 text-muted hover:bg-panel2 hover:text-ink"
+                      aria-label={`Rename ${c.name}`}
+                      title="Rename chat"
+                    >
+                      <PencilIcon />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setRenaming(null);
+                        setConfirmDel(c.id);
+                      }}
+                      className="rounded-md p-1.5 text-muted hover:bg-crit/15 hover:text-crit"
+                      aria-label={`Delete ${c.name}`}
+                      title="Delete chat"
+                    >
+                      <TrashIcon />
+                    </button>
+                  </span>
                 </div>
               );
             })}
@@ -564,6 +610,14 @@ function Logo() {
       </svg>
       <span className="font-display text-2xl italic leading-none">sift</span>
     </span>
+  );
+}
+
+function PencilIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden>
+      <path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 

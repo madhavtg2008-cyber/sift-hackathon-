@@ -145,11 +145,27 @@ export function ConversationView({ conv, analysis, items, profile, focusMsgId, i
                 setEditingName(false);
               }}
             >
-              <input autoFocus value={nameDraft} onChange={(e) => setNameDraft(e.target.value)} onBlur={() => setEditingName(false)} className={`${inputCls} h-8 py-1`} />
+              <input
+                autoFocus
+                value={nameDraft}
+                maxLength={60}
+                aria-label="Chat name"
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => setNameDraft(e.target.value)}
+                onKeyDown={(e) => e.key === "Escape" && (setNameDraft(conv.name), setEditingName(false))}
+                onBlur={() => {
+                  if (nameDraft.trim() && nameDraft.trim() !== conv.name) actions.renameConversation(conv.id, nameDraft.trim());
+                  setEditingName(false);
+                }}
+                className={`${inputCls} h-8 py-1`}
+              />
             </form>
           ) : (
-            <button onClick={() => setEditingName(true)} className="max-w-full truncate text-left text-lg font-semibold hover:text-accent" title="Rename">
-              {conv.name}
+            <button onClick={() => setEditingName(true)} className="group/name flex max-w-full items-center gap-2 text-left" title="Rename chat">
+              <span className="truncate text-lg font-semibold">{conv.name}</span>
+              <span className="shrink-0 rounded-md px-1 text-sm text-faint transition group-hover/name:bg-panel2 group-hover/name:text-ink" aria-hidden>
+                ✎
+              </span>
             </button>
           )}
           <p className="text-xs text-muted">

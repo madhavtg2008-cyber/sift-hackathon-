@@ -4,7 +4,8 @@ import { bytes, escapeRegex, hueFor, initials, relTime, uid } from "@/lib/util";
 describe("util", () => {
   it("escapes regex metacharacters", () => expect(new RegExp(escapeRegex("a.b*(c)")).test("a.b*(c)")).toBe(true));
   it("makes initials", () => {
-    expect(initials("Neha (CR)")).toBe("N(");
+    expect(initials("Neha (CR)")).toBe("NC");
+    expect(initials("🔥 Squad")).toBe("S");
     expect(initials("madhav tg")).toBe("MT");
   });
   it("gives a stable hue per name", () => expect(hueFor("Arjun")).toBe(hueFor("Arjun")));

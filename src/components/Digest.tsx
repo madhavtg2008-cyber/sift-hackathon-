@@ -2,8 +2,16 @@
 
 import type { ConvAnalysis, Conversation, Insight, ItemState, Profile } from "@/lib/types";
 import { relTime } from "@/lib/util";
+import { downloadIcs, type CalendarItem } from "@/lib/calendar";
 import { InsightCard, type InsightActions } from "./InsightCard";
 import { Button, Empty } from "./ui";
+
+const toCalendar = (i: Insight): CalendarItem => ({
+  id: i.key,
+  title: i.text.length > 80 ? i.text.slice(0, 79) + "…" : i.text,
+  description: `${i.author} in ${i.convName}`,
+  start: i.due!.ts,
+});
 
 function greeting() {
   const h = new Date().getHours();
@@ -193,7 +201,18 @@ export function Digest({
 
         <aside className="space-y-6">
           <section>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted">Timeline</h2>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Timeline</h2>
+              {deadlines.some((i) => !i.due!.overdue) && (
+                <button
+                  onClick={() => downloadIcs(deadlines.filter((i) => !i.due!.overdue).map(toCalendar))}
+                  className="rounded-md px-2 py-1 text-xs text-muted hover:bg-panel2 hover:text-ink"
+                  title="Download your upcoming deadlines as a calendar file (.ics)"
+                >
+                  + Add to calendar
+                </button>
+              )}
+            </div>
             {deadlines.length ? (
               <ol className="relative space-y-3 border-l border-line pl-4">
                 {deadlines.slice(0, 5).map((i) => (

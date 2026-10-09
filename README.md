@@ -1,82 +1,92 @@
 # Sift — catch up on chats, privately
 
 [![CI](https://github.com/madhavtg2008-cyber/sift-hackathon-/actions/workflows/ci.yml/badge.svg)](https://github.com/madhavtg2008-cyber/sift-hackathon-/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/madhavtg2008-cyber/sift-hackathon-/actions/workflows/codeql.yml/badge.svg)](https://github.com/madhavtg2008-cyber/sift-hackathon-/actions/workflows/codeql.yml)
 
-Sift turns overwhelming chat conversations into a short, prioritized catch-up: the mentions, questions, decisions, deadlines and tasks you missed, ranked by urgency and relevance. **All processing happens on your device. Conversations and summaries never leave the browser.**
+**200 unread messages. One of them is your deadline.** Sift reads your group chats and pulls out the mentions, questions, decisions, deadlines and tasks you missed, ranked by urgency and relevance. **Everything runs on your device — conversations and summaries never leave the browser, and the app proves it.**
+
+![Catch me up dashboard](docs/screenshots/02-catch-me-up.png)
+
+## At a glance
+
+| Area                        | What's in the repo                                                                                                                                                                                                                                                                                                                              | Proof                                                                                                                                       |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Innovation**              | Local-first chat triage with explainable 0–100 priority scores; English + Hinglish deadline understanding ("kal subah 8 baje"); on-device Gemini Nano summaries; **Share to Sift** from WhatsApp (PWA share target); privacy firewall with a live leak test; local deadline reminders and `.ics` calendar export                                | [`engine.ts`](src/lib/engine.ts), [`dates.ts`](src/lib/dates.ts), [`public/sw.js`](public/sw.js), [`netguard.ts`](src/lib/netguard.ts)      |
+| **Code quality**            | TypeScript strict; ESLint + Prettier enforced in CI and builds; **89 unit/API tests** + **12 Playwright E2E tests**; **91.6 % line coverage** of logic layers with CI thresholds; shared zod contracts                                                                                                                                          | [`tests/`](tests), [`e2e/`](e2e), [`docs/TESTING.md`](docs/TESTING.md), [CI](.github/workflows/ci.yml)                                      |
+| **UI / UX & impact**        | Ranked "Needs you now", timeline, decisions; undo for every action; 6 themes; mobile tab bar; keyboard shortcuts; first-run export guide; **0 WCAG 2.1 A/AA violations** (axe)                                                                                                                                                                  | [`e2e/a11y.spec.ts`](e2e/a11y.spec.ts), [screenshots](#screenshots)                                                                         |
+| **Backend & architecture**  | Versioned **`/api/v1`** with **OpenAPI 3.1**, zod validation on server _and_ client, **rate limiting** (`RateLimit-*`), **RFC 9457** errors, request IDs, ETag/304; per-request CSP nonces in middleware; analysis in a **Web Worker** for large inboxes; windowed rendering; layered design                                                    | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), [`src/server/`](src/server), [`/api/v1/openapi.json`](src/app/api/v1/openapi.json/route.ts) |
+| **Security & optimisation** | Optional **AES-256-GCM** encrypted storage (PBKDF2 310k); nonce-based CSP without `unsafe-inline` scripts; HSTS, COOP/CORP, X-Frame-Options; CodeQL + Dependabot + `npm audit` (**0 vulnerabilities**); code-split dialogs and lazy validation keep first-load JS at **138 kB** (164 kB without splitting); 4 000-message chat opens in ~0.45 s | [`SECURITY.md`](SECURITY.md) (threat model), [`vault.ts`](src/lib/vault.ts), [`csp.ts`](src/lib/csp.ts)                                     |
+
+## How it works
+
+1. **Bring a chat** — WhatsApp → ⋮ → More → **Export chat** → **Without media** → share to **Sift** (Android) or upload the `.txt`/`.zip`. Slack/JSON and pasted text work too. Files are read with the File API and never uploaded.
+2. **Sift analyses it on the device** — every message is checked for mentions of you, questions to you, tasks, decisions, deadlines and urgency, then scored by urgency × relevance (deadline proximity, unanswered questions, VIP senders, your keywords).
+3. **Catch up in seconds** — "N things need you out of M unread", a ranked list with a plain-language **why?** for every item, a deadline timeline, decisions, and missed mentions. Tick things off, snooze, export deadlines to your calendar, or jump to the exact message.
 
 ## Features
 
 **Understanding chats**
 
-- **Unread-aware catch-up.** "Catch me up" shows how many things need you out of all unread messages, plus an estimate of reading time saved.
-- **Detection engine.** Each message is tagged as a mention, question, task, decision, deadline or urgent item, with a plain-language "why?" for every flag.
-- **Priority scoring (0–100).** Urgency × relevance: direct mentions, unanswered questions, tasks for you, deadline proximity (overdue / < 24 h / < 72 h), urgent tone, VIP senders and your keywords → Critical / High / Medium / Low.
-- **Missed-item detection.** Questions you never replied to and mentions you haven't acted on.
-- **Deadline parser.** "by 5pm today", "tomorrow 11am", "EOD", "by Friday", "14th Oct 11:59 pm", "in 2 hours", "on the 10th", and Hinglish ("kal subah 8 baje", "aaj", "parso").
-- **Hinglish rule pack.** "jaldi", "bhej do", "final hai", "pakka", "kar do" and more.
-- **On-device AI summary.** Chrome's built-in Gemini Nano (Prompt / Summarizer API) when available — never a cloud AI.
+- Unread-aware catch-up with an estimate of reading time saved
+- Detection of mentions, questions, tasks, decisions, deadlines and urgency — each with reasons
+- Priority scoring 0–100 → Critical / High / Medium / Low
+- Missed-item detection: questions you never answered, mentions you haven't acted on
+- Deadline parser: "by 5pm today", "tomorrow 11am", "EOD", "by Friday", "14th Oct 11:59 pm", "in 2 hours", "on the 10th", "kal subah 8 baje", "parso"
+- Hinglish rule pack ("jaldi", "bhej do", "final hai", "pakka"…) — selectable via `?pack=en|en+hinglish`
+- On-device AI summary with Chrome's built-in Gemini Nano; never a cloud fallback
 
-**Getting chats in**
+**Getting chats in** — Share to Sift (installable PWA), WhatsApp `.txt` / `.zip` (Android and iPhone), Slack/JSON, plain text. No demo or fake data: Sift only analyses what you bring.
 
-- **Share to Sift (Android PWA).** WhatsApp → Export chat → Share → **Sift**. A service worker catches the file inside the browser; the POST never reaches the network.
-- **Upload or paste.** WhatsApp `.txt` or `.zip` exports (Android and iPhone), Slack/JSON exports, or plain `Name: message` text. Zips are unpacked in the browser.
-- **Your chats only.** No demo or fake data.
+**Using it** — mark done / snooze / hide with undo; open in chat; Highlights mode hides small talk; log your reply (marks questions answered); paste new messages; search (`/`); new chat (`n`); pin, rename, delete with undo; deadline reminders (local notifications); Add to calendar (`.ics`); backup export/restore; wipe; 6 themes, accent colours, text size; sign in / sign out; encrypted lock screen.
 
-**Using it**
+## Privacy & security
 
-- Mark done / snooze / hide with **undo toasts**, open in chat, mark read up to a message, log your reply (marks questions answered), paste new messages, search, pin, rename, delete with confirm + undo.
-- Local profile with sign in / sign out, 6 themes, accent colours, heading style, text size, focus mode.
-- **Mobile tab bar**, installable as an app, keyboard shortcuts (`/` search, `n` new chat, `Esc` clear).
+| Layer                      | Detail                                                                                                                       |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Local-first processing     | Parsing, scoring, summaries and search run in the tab or a Web Worker                                                        |
+| Privacy firewall           | Every `fetch` / XHR / `sendBeacon` is inspected; requests containing chat text are blocked; built-in leak test + network log |
+| Encrypted storage (opt-in) | AES-256-GCM, PBKDF2-SHA256 (310 000 iterations), in-memory non-extractable key, fresh IV per write, tamper detection         |
+| Content-Security-Policy    | Per-request nonce, `'strict-dynamic'`, `connect-src 'self'`, `object-src 'none'`, `frame-ancestors 'none'`                   |
+| Server                     | No write endpoints; `POST /api/v1/health` always 403                                                                         |
+| Supply chain               | CodeQL, Dependabot, `npm audit` in CI                                                                                        |
 
-## Security & privacy
-
-| Layer                        | What it does                                                                                                                                                                        |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Local-first processing       | Parsing, scoring, summaries and search run in the tab (or a Web Worker).                                                                                                            |
-| Privacy firewall             | Every `fetch` / XHR / `sendBeacon` is inspected; requests containing chat text are **blocked** before leaving the browser. Built-in leak test + network log.                        |
-| Encrypted storage (optional) | AES-256-GCM, key from your passphrase via PBKDF2-SHA256 (310 000 iterations). Non-extractable key kept in memory only; fresh IV per write; tamper detection. Lock / unlock screen.  |
-| Nonce-based CSP              | Per-request nonce via middleware, `script-src 'self' 'nonce-…' 'strict-dynamic'` (no `unsafe-inline` scripts), `connect-src 'self'`, `object-src 'none'`, `frame-ancestors 'none'`. |
-| Headers                      | HSTS (preload), X-Frame-Options DENY, COOP/CORP same-origin, nosniff, no-referrer, restrictive Permissions-Policy, `X-Powered-By` removed.                                          |
-| Server                       | Accepts no content: `POST /api/health` always returns 403.                                                                                                                          |
+Full threat model: [`SECURITY.md`](SECURITY.md).
 
 ## Architecture
 
 ```
-Browser (all private processing)
-├── components/        App shell, Sidebar, Digest, ConversationView, ListView, modals
-├── hooks/useAnalysis  inline analysis for small inboxes, Web Worker above 1 500 messages
-├── workers/           analyze.worker.ts — engine off the main thread
-├── lib/parser.ts      WhatsApp (Android/iOS) / JSON / plain-text parsing
-├── lib/share.ts       .zip unpacking + Share-to-Sift handoff
-├── lib/engine.ts      detection + 0–100 scoring + extractive summaries
-├── lib/dates.ts       deadline extraction (English + Hinglish)
-├── lib/ondevice.ts    Chrome built-in Gemini Nano wrapper
-├── lib/netguard.ts    privacy firewall + network audit log
-├── lib/vault.ts       AES-GCM / PBKDF2 encryption
-└── lib/store.ts       localStorage persistence (plain or encrypted vault)
-
-public/sw.js           service worker: Share-to-Sift target only
-src/middleware.ts      per-request CSP nonce
-
-Next.js server (never sees conversations)
-├── GET  /api/rules    versioned rule pack, ETag / 304 revalidation
-├── GET  /api/health   status
-└── POST /api/health   always 403 — accepts no content
+Browser (all private processing)                     Next.js server (never sees chats)
+├── components/   React UI (dialogs code-split)      ├── middleware.ts    per-request CSP nonce
+├── hooks/        useAnalysis · useReminders         ├── server/          rate limit · problem+json · rule packs
+├── workers/      analysis off the main thread       ├── api/v1/rules     zod-validated, ETag/304
+├── lib/          parser · engine · dates · vault    ├── api/v1/health    GET ok · POST 403
+│                 netguard · share · calendar        └── api/v1/openapi.json
+└── public/sw.js  Share-to-Sift target               lib/contracts.ts — shared zod schemas
 ```
 
-**Performance:** analysis moves to a Web Worker for big inboxes; chat threads render the newest 300 messages with "show earlier" paging (a 4 000-message chat opens in under half a second in testing).
+Diagram, layers and design decisions: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Quality
 
 ```bash
-npm run lint        # ESLint (also enforced during `next build`)
-npm run typecheck   # tsc --noEmit
-npm test            # 56 Vitest unit tests: parser, deadlines, engine, encryption, zip import
-npm run format:check
-npm run build
+npm run lint && npm run typecheck
+npm run test:coverage                # 89 unit/API tests, coverage thresholds
+npm run build && npm run test:e2e    # 12 Playwright tests incl. axe accessibility scans
 ```
 
-GitHub Actions runs all of the above on every push.
+GitHub Actions runs lint, types, tests with coverage, formatting, `npm audit`, the production build and the full Playwright suite on every push; CodeQL runs alongside. Details: [`docs/TESTING.md`](docs/TESTING.md).
+
+## Screenshots
+
+| Chat with Highlights                                  | Privacy: leak test blocked                              | Mobile                                    |
+| ----------------------------------------------------- | ------------------------------------------------------- | ----------------------------------------- |
+| ![Chat view](docs/screenshots/03-chat-highlights.png) | ![Leak test](docs/screenshots/04-privacy-leak-test.png) | ![Mobile](docs/screenshots/07-mobile.png) |
+
+| Themes                                               | Paper theme                                   |
+| ---------------------------------------------------- | --------------------------------------------- |
+| ![Settings](docs/screenshots/05-settings-themes.png) | ![Paper](docs/screenshots/06-paper-theme.png) |
+
+_Screenshots use an example chat._
 
 ## Run locally
 
@@ -85,18 +95,12 @@ npm install
 npm run dev     # http://localhost:3000
 ```
 
-## Deploy
+Deploy: import the repo on Vercel with default settings — no environment variables needed. On-device AI needs desktop Chrome 138+; other browsers use the local engine.
 
-Import the repo on Vercel with default settings. No environment variables are needed.
+## Demo in 60 seconds
 
-## Try on-device AI
-
-Desktop Chrome 138+ includes the Summarizer API. The first run downloads Gemini Nano inside Chrome. Other browsers use the local rules engine.
-
-## 60-second demo
-
-1. Sign in with your name. Sift starts empty.
-2. In WhatsApp: busy group → ⋮ → More → **Export chat** → **Without media** → share to **Sift** (or upload the file).
-3. Show "N things need you out of M unread" and **Needs you now**; tap **why?** on a card; tick one done and hit **Undo**.
-4. Open the chat — it jumps to the latest message; switch to **Highlights**.
-5. Privacy badge → **Run leak test** (BLOCKED) → **Encrypt** with a passphrase → **Lock** → unlock.
+1. Sign in with your name → share a WhatsApp export to Sift (or upload it).
+2. "N things need you out of M unread" → tap **why?** on a card → tick it done → **Undo**.
+3. Open the chat — it jumps to the latest message → switch to **Highlights**.
+4. Privacy badge → **Run leak test** (**BLOCKED**) → **Encrypt** → **Lock** → unlock.
+5. Timeline → **Add to calendar**.

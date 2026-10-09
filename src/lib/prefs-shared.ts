@@ -10,6 +10,7 @@ export interface UiPrefs {
   headline: Headline;
   focusMode: boolean; // hide low-signal messages in chats by default
   showReasons: boolean; // show the "Why" line on cards
+  reminders: boolean; // local notifications before deadlines
 }
 
 export const DEFAULT_PREFS: UiPrefs = {
@@ -19,6 +20,7 @@ export const DEFAULT_PREFS: UiPrefs = {
   headline: "serif",
   focusMode: false,
   showReasons: false,
+  reminders: false,
 };
 
 /** Swatches used only to preview themes in Settings: [background, panel, accent, ink] */

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Insight, ItemState } from "@/lib/types";
+import { downloadIcs } from "@/lib/calendar";
 import { relTime } from "@/lib/util";
 import { Avatar, KindChip, PriorityPill } from "./ui";
 
@@ -167,6 +168,28 @@ export function InsightCard({
               >
                 Not important — hide
               </button>
+              {i.due && !i.due.overdue && (
+                <button
+                  role="menuitem"
+                  className="block w-full px-3 py-1.5 text-left text-muted hover:bg-line hover:text-ink"
+                  onClick={() => {
+                    downloadIcs(
+                      [
+                        {
+                          id: i.key,
+                          title: i.text.length > 80 ? i.text.slice(0, 79) + "…" : i.text,
+                          description: `${i.author} in ${i.convName}`,
+                          start: i.due!.ts,
+                        },
+                      ],
+                      "sift-deadline.ics",
+                    );
+                    setMenu(false);
+                  }}
+                >
+                  Add to calendar
+                </button>
+              )}
               <button
                 role="menuitem"
                 className="block w-full px-3 py-1.5 text-left text-muted hover:bg-line hover:text-ink"

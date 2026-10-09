@@ -56,6 +56,7 @@ export function SettingsModal({
   onOpenPrivacy: () => void;
 }) {
   const [tab, setTab] = useState<Tab>("look");
+  const [notice, setNotice] = useState("");
   const mode = THEMES.find((t) => t.id === prefs.theme)?.mode ?? "dark";
 
   return (
@@ -189,6 +190,20 @@ export function SettingsModal({
             label="Always show why"
             hint="Show the score and reasons on every card instead of behind “why?”."
           />
+          <Toggle
+            checked={prefs.reminders}
+            onChange={async (v) => {
+              if (v && typeof Notification !== "undefined" && Notification.permission !== "granted") {
+                const p = await Notification.requestPermission();
+                if (p !== "granted") return setNotice("Notifications are blocked in this browser's site settings.");
+              }
+              setNotice("");
+              onPrefs({ reminders: v });
+            }}
+            label="Deadline reminders"
+            hint="A notification 30 minutes before your deadlines. Scheduled on this device — no push server."
+          />
+          {notice && <p className="text-xs text-crit">{notice}</p>}
           <button onClick={onOpenPrivacy} className="mt-2 text-sm text-muted underline decoration-line2 underline-offset-4 hover:text-ink">
             Privacy, backups & wipe data →
           </button>

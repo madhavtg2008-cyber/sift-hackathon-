@@ -10,7 +10,7 @@ test("imports a WhatsApp export and surfaces what needs you", async ({ page }) =
     .first()
     .click();
   await expect(page.getByText(/thing[s]? need you/)).toBeVisible();
-  const card = page.locator("article", { hasText: "@Madhav can you deploy the site by 5pm today?" });
+  const card = page.locator("article", { hasText: "@Madhav can you deploy the site by 11:59 pm today?" });
   await expect(card).toBeVisible();
   await expect(card.getByText("Critical")).toBeVisible();
   // Decisions are collected
@@ -46,4 +46,18 @@ test("data survives a reload and search finds messages", async ({ page }) => {
   await page.keyboard.press("/");
   await page.keyboard.type("green theme");
   await expect(page.getByText(/1 result for/)).toBeVisible();
+});
+
+test("upcoming deadlines can be exported to a calendar file", async ({ page }) => {
+  await signInAndImport(page);
+  await page
+    .getByRole("button", { name: /Catch me up/ })
+    .first()
+    .click();
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "+ Add to calendar" }).click();
+  const file = await download;
+  expect(file.suggestedFilename()).toBe("sift-deadlines.ics");
+  const text = await (await file.createReadStream()).toArray().then((c) => Buffer.concat(c).toString());
+  expect(text).toContain("BEGIN:VEVENT");
 });

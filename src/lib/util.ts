@@ -41,9 +41,10 @@ export function dayLabel(ts: number) {
 export function initials(name: string) {
   return name
     .split(/\s+/)
+    .map((p) => p.replace(/[^\p{L}\p{N}]/gu, ""))
     .filter(Boolean)
     .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase())
+    .map((p) => p[0]!.toUpperCase())
     .join("");
 }
 

@@ -10,6 +10,7 @@ import { ConversationView } from "./ConversationView";
 import { Digest } from "./Digest";
 import { ListView, type ListFilter } from "./ListView";
 import { useNetEvents } from "@/hooks/useNetEvents";
+import { useReminders } from "@/hooks/useReminders";
 import { SearchResults, searchChats } from "./SearchResults";
 import { Sidebar, type View } from "./Sidebar";
 import { SignIn } from "./SignIn";
@@ -28,6 +29,8 @@ const ProfileModal = dynamic(() => import("./ProfileModal").then((m) => m.Profil
 const PrivacyPanel = dynamic(() => import("./PrivacyPanel").then((m) => m.PrivacyPanel), { ssr: false });
 
 if (typeof window !== "undefined") installNetguard();
+
+const EMPTY_ITEMS = {};
 
 export default function App() {
   const { data, actions, vault } = useAppData();
@@ -106,6 +109,7 @@ export default function App() {
     () => allInsights.filter((i) => !data?.items[i.key]?.dismissed && (data?.items[i.key]?.snoozedUntil ?? 0) <= now),
     [allInsights, data?.items, now],
   );
+  useReminders(allInsights, data?.items ?? EMPTY_ITEMS, prefs.reminders);
 
   const openConv = useCallback((id: string, focus?: string) => {
     setView({ kind: "conv", id, focus, nonce: Date.now() });

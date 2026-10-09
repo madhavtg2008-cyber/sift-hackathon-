@@ -11,6 +11,7 @@ Sift is an AI micro-app that turns overwhelming chat conversations into a short,
 - **Deadline parser.** Understands "by 5pm today", "tomorrow 11am", "EOD", "by Friday", "14th Oct 11:59 pm", "in 2 hours", "on the 10th", and Hinglish ("kal subah 8 baje", "aaj", "parso").
 - **Hinglish rule pack.** "jaldi", "bhej do", "final hai", "pakka", "kar do" and more.
 - **On-device AI summary.** Uses Chrome's built-in Gemini Nano (Prompt API / Summarizer API) when available. It never falls back to a cloud AI.
+- **Your chats only.** There is no demo or fake data — Sift starts empty and only analyses chats you upload or paste yourself.
 - **Import anything.** Paste text, upload a WhatsApp `.txt` export, or a Slack/JSON export. Files are read with the File API and never uploaded.
 - **Fully interactive.** Mark done, snooze, dismiss, open in chat, mark read up to a message, log your reply (which marks questions answered), paste new messages, search all chats, pin, rename, delete, export/restore a backup, wipe everything.
 - **Privacy firewall.** Every `fetch`, XHR and beacon is inspected, and any request containing chat text is blocked before it leaves the browser. A built-in leak test proves it, and a network log shows every request.
@@ -29,7 +30,6 @@ Browser (everything private happens here)
 
 Next.js server (never sees conversations)
 ├── GET  /api/rules    versioned detection rule pack (cached on device)
-├── GET  /api/samples  demo chats; "{{me}}" is filled in on the device
 ├── GET  /api/health   status
 └── POST /api/health   always refuses (403) — server accepts no content
 ```
@@ -53,9 +53,9 @@ Use desktop Chrome 138+ (the Summarizer API is built in). The first run download
 
 ## 60-second demo script
 
-1. Enter your name, then **Try with demo chats**. This loads 5 chats with ~70 messages.
-2. Show the headline ("N things need you out of 56 unread") and the **Needs you now** list with "Why" reasons.
-3. Open **Hackathon Squad**, switch to **Highlights**, and the noise collapses away.
-4. Click **AI summary (on-device)**.
-5. In **Rohan (Client)**, log a reply, then go back to the digest. "Need your reply" drops.
-6. Open the shield badge, click **Run leak test**, and the request is **BLOCKED**. Point out "0 B of chat sent".
+1. Sign in with your name. Sift starts empty.
+2. In WhatsApp, open a busy group → ⋮ → More → **Export chat** → **Without media**, then upload the .txt with **+ Add chat**.
+3. Show the headline ("N things need you out of M unread") and **Needs you now**; tap **why?** on a card.
+4. Open the chat: it jumps to the latest message. Switch to **Highlights** to collapse the noise.
+5. Log a reply to a question, go back to **Catch me up**, and "Need your reply" drops.
+6. Open the **On-device** badge, run the **leak test**, and the request is **BLOCKED**.

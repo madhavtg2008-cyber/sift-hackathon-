@@ -20,7 +20,6 @@ export function Digest({
   openList,
   markAllRead,
   onImport,
-  onDemo,
   showReasons,
 }: {
   profile: Profile;
@@ -33,7 +32,6 @@ export function Digest({
   openList: (f: "action" | "deadline" | "decision" | "mention" | "question") => void;
   markAllRead: () => void;
   onImport: () => void;
-  onDemo: () => void;
   showReasons?: boolean;
 }) {
   if (!conversations.length)
@@ -41,14 +39,11 @@ export function Digest({
       <div className="mx-auto max-w-2xl px-4 py-16">
         <Empty
           title="Nothing to sift yet"
-          body="Paste a chat, upload a WhatsApp export, or load the demo chats. Everything is analysed on this device."
+          body="Upload a WhatsApp export or paste a chat to get started. Everything is analysed on this device and never uploaded."
           action={
-            <div className="flex flex-wrap justify-center gap-2">
-              <Button variant="primary" onClick={onImport}>
-                + Add a conversation
-              </Button>
-              <Button onClick={onDemo}>Try with demo chats</Button>
-            </div>
+            <Button variant="primary" onClick={onImport}>
+              + Add your first chat
+            </Button>
           }
         />
       </div>

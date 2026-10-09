@@ -1,4 +1,4 @@
-export type Source = "whatsapp" | "json" | "paste" | "sample";
+export type Source = "whatsapp" | "json" | "paste";
 
 export interface Message {
   id: string;

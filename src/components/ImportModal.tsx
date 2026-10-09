@@ -5,34 +5,30 @@ import { nameFromFile, parseChat } from "@/lib/parser";
 import type { Message, Source } from "@/lib/types";
 import { Button, Field, inputCls, Modal } from "./ui";
 
-type Tab = "paste" | "file" | "demo";
+type Tab = "file" | "paste";
 
-const EXAMPLE = `Arjun: @Madhav can you push the API routes by 3pm?
-Priya: We decided to use Supabase, final hai
-Kabir: lol
-Priya: Pitch deck due tomorrow 10am, everyone add your slide
-Arjun: URGENT the portal closes at 5pm today`;
+const FORMAT_HINT = `One message per line, for example:
+Name: message text
+
+WhatsApp exports can be pasted as-is.`;
 
 export function ImportModal({
   open,
   onClose,
   onImport,
-  onLoadDemo,
   myName,
 }: {
   open: boolean;
   onClose: () => void;
   onImport: (name: string, source: Source, messages: Omit<Message, "id">[], readCount: number) => void;
-  onLoadDemo: () => Promise<number>;
   myName: string;
 }) {
-  const [tab, setTab] = useState<Tab>("paste");
+  const [tab, setTab] = useState<Tab>("file");
   const [text, setText] = useState("");
   const [name, setName] = useState("");
   const [allUnread, setAllUnread] = useState(true);
   const [fileName, setFileName] = useState("");
   const [dragging, setDragging] = useState(false);
-  const [demoState, setDemoState] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -47,7 +43,6 @@ export function ImportModal({
     setName("");
     setFileName("");
     setError("");
-    setDemoState("idle");
   };
 
   const readFile = async (file: File) => {
@@ -86,9 +81,8 @@ export function ImportModal({
       <div className="mb-4 flex gap-1 rounded-lg bg-bg p-1 text-sm" role="tablist">
         {(
           [
-            ["paste", "Paste text"],
             ["file", "Upload export"],
-            ["demo", "Demo chats"],
+            ["paste", "Paste text"],
           ] as const
         ).map(([k, l]) => (
           <button
@@ -103,31 +97,7 @@ export function ImportModal({
         ))}
       </div>
 
-      {tab === "demo" ? (
-        <div className="space-y-4">
-          <p className="text-sm text-muted">
-            Loads 5 realistic chats (hackathon team, freelance client, class group, family, flatmates) with ~70 messages.
-            The demo text comes from Sift&apos;s server; your name is filled in on this device only.
-          </p>
-          <Button
-            variant="primary"
-            disabled={demoState === "loading"}
-            onClick={async () => {
-              setDemoState("loading");
-              try {
-                await onLoadDemo();
-                reset();
-                onClose();
-              } catch {
-                setDemoState("error");
-              }
-            }}
-          >
-            {demoState === "loading" ? "Loading…" : "Load demo chats"}
-          </Button>
-          {demoState === "error" && <p className="text-sm text-crit">Couldn&apos;t reach the server. Try pasting a chat instead.</p>}
-        </div>
-      ) : (
+      {(
         <div className="space-y-4">
           {tab === "paste" ? (
             <Field label="Chat text" hint="WhatsApp exports, Slack/JSON exports, or simple “Name: message” lines all work.">
@@ -135,7 +105,7 @@ export function ImportModal({
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 rows={9}
-                placeholder={EXAMPLE}
+                placeholder={FORMAT_HINT}
                 className={`${inputCls} font-mono text-[0.7812rem] leading-relaxed`}
               />
             </Field>
@@ -174,9 +144,6 @@ export function ImportModal({
                 <p className="mt-2 leading-relaxed">
                   Open the chat → tap the name (or ⋮ menu) → <b>Export chat</b> → <b>Without media</b>. Save the .txt file and drop it here.
                 </p>
-                <a href="/sample-whatsapp-chat.txt" download className="mt-2 inline-block text-accent underline underline-offset-2">
-                  Download a sample WhatsApp export to try
-                </a>
               </details>
             </div>
           )}
@@ -209,11 +176,6 @@ export function ImportModal({
           </div>
 
           <div className="flex justify-end gap-2 pt-1">
-            {tab === "paste" && !text && (
-              <Button variant="ghost" onClick={() => setText(EXAMPLE.replaceAll("Madhav", myName || "Madhav"))}>
-                Use example
-              </Button>
-            )}
             <Button variant="primary" disabled={!parsed?.messages.length} onClick={submit}>
               Analyze on device
             </Button>

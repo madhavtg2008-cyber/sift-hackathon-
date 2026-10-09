@@ -26,7 +26,9 @@ function load(): AppData {
     if (!raw) return EMPTY;
     const parsed = JSON.parse(raw) as AppData;
     if (parsed?.version !== 1) return EMPTY;
-    return { ...EMPTY, ...parsed };
+    // demo chats from older versions are removed: only the user's own uploads are kept
+    const conversations = (parsed.conversations ?? []).filter((c) => (c.source as string) !== "sample");
+    return { ...EMPTY, ...parsed, conversations };
   } catch {
     return EMPTY;
   }

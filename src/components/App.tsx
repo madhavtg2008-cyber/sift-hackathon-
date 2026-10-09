@@ -104,25 +104,6 @@ export default function App() {
 
   const insightActions = useMemo(() => ({ setItem: actions.setItem, open: openConv }), [actions.setItem, openConv]);
 
-  const loadDemo = async () => {
-    const res = await fetch("/api/samples");
-    if (!res.ok) throw new Error("failed");
-    const json = (await res.json()) as {
-      conversations: { name: string; readCount: number; messages: { author: string; text: string; ts: number }[] }[];
-    };
-    const me = data?.profile?.name ?? "You";
-    const fill = (s: string) => s.replaceAll("{{me}}", me);
-    for (const c of json.conversations) {
-      actions.addConversation(
-        c.name,
-        "sample",
-        c.messages.map((m) => ({ author: fill(m.author), text: fill(m.text), ts: m.ts })),
-        c.readCount,
-      );
-    }
-    setView({ kind: "digest" });
-    return json.conversations.length;
-  };
 
   // ---------- loading & onboarding ----------
   if (!data) {
@@ -514,7 +495,6 @@ export default function App() {
               openList={(f) => setView({ kind: "list", filter: f })}
               markAllRead={actions.markAllRead}
               onImport={() => setImportOpen(true)}
-              onDemo={() => void loadDemo().catch(() => setImportOpen(true))}
               showReasons={prefs.showReasons}
             />
           )}
@@ -529,7 +509,6 @@ export default function App() {
           const id = actions.addConversation(name, source, messages, readCount);
           openConv(id);
         }}
-        onLoadDemo={loadDemo}
       />
       <SettingsModal
         open={profileOpen}

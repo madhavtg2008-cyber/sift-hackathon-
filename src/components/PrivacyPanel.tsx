@@ -94,7 +94,7 @@ export function PrivacyPanel({
             blocked before it leaves the browser. A strict Content-Security-Policy also stops connections to other domains.
           </p>
           <p>
-            <b className="text-ink">Server role.</b> The backend only serves the app, rule packs ({rulesSource}) and demo data. It refuses
+            <b className="text-ink">Server role.</b> The backend only serves the app, and rule packs ({rulesSource}). It refuses
             any uploaded content.
           </p>
         </section>

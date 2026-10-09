@@ -4,8 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { AppData, Conversation, ItemState, Lexicon, Message, Profile, Source } from "./types";
 import { DEFAULT_LEXICON } from "./lexicon";
 import { uid } from "./util";
+import { deriveKey, newSalt, open, seal, type VaultBlob } from "./vault";
 
 const KEY = "sift:v1";
+const VAULT_KEY = "sift:vault";
 const RULES_KEY = "sift:rules";
 const LAST_PROFILE_KEY = "sift:lastProfile";
 
@@ -20,15 +22,31 @@ export function lastProfile(): Profile | null {
 
 const EMPTY: AppData = { version: 1, profile: null, conversations: [], items: {} };
 
-function load(): AppData {
+function readVault(): VaultBlob | null {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(VAULT_KEY);
+    return raw ? (JSON.parse(raw) as VaultBlob) : null;
+  } catch {
+    return null;
+  }
+}
+
+function normalize(raw: string | null): AppData {
+  try {
     if (!raw) return EMPTY;
     const parsed = JSON.parse(raw) as AppData;
     if (parsed?.version !== 1) return EMPTY;
     // demo chats from older versions are removed: only the user's own uploads are kept
     const conversations = (parsed.conversations ?? []).filter((c) => (c.source as string) !== "sample");
     return { ...EMPTY, ...parsed, conversations };
+  } catch {
+    return EMPTY;
+  }
+}
+
+function load(): AppData {
+  try {
+    return normalize(localStorage.getItem(KEY));
   } catch {
     return EMPTY;
   }
@@ -47,13 +65,39 @@ export function storageBytes() {
   }
 }
 
-/** All app state lives in this browser's localStorage. Nothing is synced anywhere. */
+/**
+ * All app state lives in this browser's localStorage. Nothing is synced anywhere.
+ * With encryption on, it is stored only as an AES-GCM vault and the key stays in memory.
+ */
 export function useAppData() {
   const [data, setData] = useState<AppData | null>(null);
+  const [locked, setLocked] = useState(false);
+  const [vaultOn, setVaultOn] = useState(false);
   const first = useRef(true);
+  const keyRef = useRef<{ key: CryptoKey; salt: Uint8Array } | null>(null);
+  const writeSeq = useRef(0);
 
   useEffect(() => {
-    setData(load());
+    if (readVault()) {
+      setVaultOn(true);
+      setLocked(true);
+    } else setData(load());
+  }, []);
+
+  const persist = useCallback(async (d: AppData) => {
+    const seq = ++writeSeq.current;
+    try {
+      if (keyRef.current) {
+        const blob = await seal(JSON.stringify(d), keyRef.current.key, keyRef.current.salt);
+        if (seq !== writeSeq.current) return; // a newer write is already on its way
+        localStorage.setItem(VAULT_KEY, JSON.stringify(blob));
+        localStorage.removeItem(KEY);
+      } else {
+        localStorage.setItem(KEY, JSON.stringify(d));
+      }
+    } catch {
+      /* storage full or blocked — keep working in memory */
+    }
   }, []);
 
   useEffect(() => {
@@ -62,12 +106,58 @@ export function useAppData() {
       first.current = false;
       return;
     }
-    try {
-      localStorage.setItem(KEY, JSON.stringify(data));
-    } catch {
-      /* storage full or blocked — keep working in memory */
-    }
-  }, [data]);
+    void persist(data);
+  }, [data, persist]);
+
+  const vault = {
+    enabled: vaultOn,
+    locked,
+    /** Returns false for a wrong passphrase. */
+    unlock: async (passphrase: string) => {
+      const blob = readVault();
+      if (!blob) return false;
+      try {
+        const { plaintext, key, salt } = await open(blob, passphrase);
+        keyRef.current = { key, salt };
+        first.current = true;
+        setData(normalize(plaintext));
+        setLocked(false);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    enable: async (passphrase: string) => {
+      if (!data) return;
+      const salt = newSalt();
+      keyRef.current = { key: await deriveKey(passphrase, salt), salt };
+      await persist(data);
+      try {
+        localStorage.removeItem(LAST_PROFILE_KEY); // don't leave the profile in plain text
+      } catch {
+        /* ignore */
+      }
+      setVaultOn(true);
+    },
+    disable: async () => {
+      if (!data) return;
+      keyRef.current = null;
+      await persist(data);
+      try {
+        localStorage.removeItem(VAULT_KEY);
+      } catch {
+        /* ignore */
+      }
+      setVaultOn(false);
+    },
+    lock: () => {
+      keyRef.current = null;
+      writeSeq.current++; // cancel any pending encrypted write
+      first.current = true;
+      setData(null);
+      setLocked(true);
+    },
+  };
 
   const update = useCallback((fn: (d: AppData) => AppData) => setData((d) => (d ? fn(d) : d)), []);
 
@@ -78,7 +168,7 @@ export function useAppData() {
     logout: () =>
       update((d) => {
         try {
-          if (d.profile) localStorage.setItem(LAST_PROFILE_KEY, JSON.stringify(d.profile));
+          if (d.profile && !keyRef.current) localStorage.setItem(LAST_PROFILE_KEY, JSON.stringify(d.profile));
         } catch {
           /* ignore */
         }
@@ -112,9 +202,7 @@ export function useAppData() {
     markRead: (convId: string, upTo?: number) =>
       update((d) => ({
         ...d,
-        conversations: d.conversations.map((c) =>
-          c.id === convId ? { ...c, lastReadIndex: upTo ?? c.messages.length - 1 } : c,
-        ),
+        conversations: d.conversations.map((c) => (c.id === convId ? { ...c, lastReadIndex: upTo ?? c.messages.length - 1 } : c)),
       })),
 
     markAllRead: () =>
@@ -155,11 +243,14 @@ export function useAppData() {
         /* ignore */
       }
       first.current = true;
+      keyRef.current = null;
+      setVaultOn(false);
+      setLocked(false);
       setData({ ...EMPTY });
     },
   };
 
-  return { data, actions };
+  return { data, actions, vault };
 }
 
 /** Rule pack: bundled default, refreshed from the backend and cached locally. */

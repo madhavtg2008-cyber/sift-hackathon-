@@ -47,7 +47,12 @@ export function ProfileForm({
             <input value={vips} onChange={(e) => setVips(e.target.value)} placeholder="Mom, Rohan" className={inputCls} />
           </Field>
           <Field label="Topics you care about" hint="Messages containing these words are surfaced. e.g. invoice, exam, deploy">
-            <input value={keywords} onChange={(e) => setKeywords(e.target.value)} placeholder="invoice, exam, deploy" className={inputCls} />
+            <input
+              value={keywords}
+              onChange={(e) => setKeywords(e.target.value)}
+              placeholder="invoice, exam, deploy"
+              className={inputCls}
+            />
           </Field>
         </>
       )}

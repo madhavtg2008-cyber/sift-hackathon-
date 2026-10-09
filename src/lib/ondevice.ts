@@ -43,35 +43,36 @@ export async function onDeviceSummarize(
   onProgress?: (pct: number) => void,
 ): Promise<{ text: string; engine: string }> {
   const s = g();
-  const monitor = (m: any) =>
-    m.addEventListener?.("downloadprogress", (e: any) => onProgress?.(Math.round((e.loaded ?? 0) * 100)));
+  const monitor = (m: any) => m.addEventListener?.("downloadprogress", (e: any) => onProgress?.(Math.round((e.loaded ?? 0) * 100)));
 
   const input = clip(transcript);
   let lastErr: unknown;
 
   if (s?.LanguageModel?.create) {
     try {
-    const avail = await s.LanguageModel.availability({ expectedOutputs: [{ type: "text", languages: ["en"] }] }).catch(() => "unavailable");
-    if (avail !== "unavailable") {
-      const session = await s.LanguageModel.create({
-        monitor,
-        expectedOutputs: [{ type: "text", languages: ["en"] }],
-        initialPrompts: [
-          {
-            role: "system",
-            content:
-              `You triage chat conversations for ${myName || "the user"}. Reply in plain text, max 6 short bullet lines starting with "• ". ` +
-              `Cover: what happened, decisions made, tasks or questions for ${myName || "the user"}, and deadlines. No preamble.`,
-          },
-        ],
-      });
-      try {
-        const text = await session.prompt(`Conversation:\n${input}`);
-        return { text: sane(text, input), engine: "Gemini Nano · Prompt API (on-device)" };
-      } finally {
-        session.destroy?.();
+      const avail = await s.LanguageModel.availability({ expectedOutputs: [{ type: "text", languages: ["en"] }] }).catch(
+        () => "unavailable",
+      );
+      if (avail !== "unavailable") {
+        const session = await s.LanguageModel.create({
+          monitor,
+          expectedOutputs: [{ type: "text", languages: ["en"] }],
+          initialPrompts: [
+            {
+              role: "system",
+              content:
+                `You triage chat conversations for ${myName || "the user"}. Reply in plain text, max 6 short bullet lines starting with "• ". ` +
+                `Cover: what happened, decisions made, tasks or questions for ${myName || "the user"}, and deadlines. No preamble.`,
+            },
+          ],
+        });
+        try {
+          const text = await session.prompt(`Conversation:\n${input}`);
+          return { text: sane(text, input), engine: "Gemini Nano · Prompt API (on-device)" };
+        } finally {
+          session.destroy?.();
+        }
       }
-    }
     } catch (e) {
       lastErr = e; // fall through to the Summarizer API
     }

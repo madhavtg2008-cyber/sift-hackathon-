@@ -23,12 +23,30 @@ export const DEFAULT_PREFS: UiPrefs = {
 
 /** Swatches used only to preview themes in Settings: [background, panel, accent, ink] */
 export const THEMES: { id: ThemeId; name: string; blurb: string; mode: "dark" | "light"; swatch: [string, string, string, string] }[] = [
-  { id: "midnight", name: "Midnight", blurb: "Ink black, lime highlights", mode: "dark", swatch: ["#0b0d10", "#12151a", "#c8f169", "#e8eaee"] },
-  { id: "paper", name: "Paper", blurb: "Warm newsprint, calm reading", mode: "light", swatch: ["#f4f0e8", "#fbf9f4", "#2f5d1e", "#1d1b17"] },
+  {
+    id: "midnight",
+    name: "Midnight",
+    blurb: "Ink black, lime highlights",
+    mode: "dark",
+    swatch: ["#0b0d10", "#12151a", "#c8f169", "#e8eaee"],
+  },
+  {
+    id: "paper",
+    name: "Paper",
+    blurb: "Warm newsprint, calm reading",
+    mode: "light",
+    swatch: ["#f4f0e8", "#fbf9f4", "#2f5d1e", "#1d1b17"],
+  },
   { id: "chai", name: "Chai", blurb: "Masala brown & saffron", mode: "dark", swatch: ["#1a1410", "#231b15", "#ffa53d", "#f3e6d6"] },
   { id: "matcha", name: "Matcha", blurb: "Deep green, soft mint", mode: "dark", swatch: ["#0c1411", "#121d18", "#7fe0a8", "#e3efe8"] },
   { id: "dusk", name: "Dusk", blurb: "Plum night, coral glow", mode: "dark", swatch: ["#140f1a", "#1c1524", "#ff8a6b", "#efe6f4"] },
-  { id: "terminal", name: "Terminal", blurb: "Monospace, phosphor green", mode: "dark", swatch: ["#000000", "#0a0d0a", "#3dff7a", "#c9f5d4"] },
+  {
+    id: "terminal",
+    name: "Terminal",
+    blurb: "Monospace, phosphor green",
+    mode: "dark",
+    swatch: ["#000000", "#0a0d0a", "#3dff7a", "#c9f5d4"],
+  },
 ];
 
 export const ACCENTS: { id: AccentId; name: string; dark: string; light: string }[] = [

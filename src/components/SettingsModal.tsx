@@ -194,7 +194,6 @@ export function SettingsModal({
           </button>
         </div>
       )}
-
     </Modal>
   );
 }

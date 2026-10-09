@@ -33,10 +33,7 @@ export function ImportModal({
   const fileRef = useRef<HTMLInputElement>(null);
 
   const parsed = useMemo(() => (text.trim() ? parseChat(text) : null), [text]);
-  const participants = useMemo(
-    () => (parsed ? Array.from(new Set(parsed.messages.map((m) => m.author))) : []),
-    [parsed],
-  );
+  const participants = useMemo(() => (parsed ? Array.from(new Set(parsed.messages.map((m) => m.author))) : []), [parsed]);
 
   const reset = () => {
     setText("");
@@ -59,7 +56,7 @@ export function ImportModal({
     if (!parsed?.messages.length) return;
     const readCount = allUnread ? 0 : Math.max(0, parsed.messages.length - 10);
     onImport(
-      name.trim() || (participants.length <= 2 ? participants.find((p) => p !== myName) ?? "New chat" : "New group chat"),
+      name.trim() || (participants.length <= 2 ? (participants.find((p) => p !== myName) ?? "New chat") : "New group chat"),
       parsed.format,
       parsed.messages.map(({ author, text, ts }) => ({ author, text, ts })),
       readCount,
@@ -97,7 +94,7 @@ export function ImportModal({
         ))}
       </div>
 
-      {(
+      {
         <div className="space-y-4">
           {tab === "paste" ? (
             <Field label="Chat text" hint="WhatsApp exports, Slack/JSON exports, or simple “Name: message” lines all work.">
@@ -170,7 +167,12 @@ export function ImportModal({
               <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Project team" className={inputCls} />
             </Field>
             <label className="flex h-9 items-center gap-2 text-sm text-muted">
-              <input type="checkbox" checked={allUnread} onChange={(e) => setAllUnread(e.target.checked)} className="accent-[var(--color-accent)]" />
+              <input
+                type="checkbox"
+                checked={allUnread}
+                onChange={(e) => setAllUnread(e.target.checked)}
+                className="accent-[var(--color-accent)]"
+              />
               Treat all as unread
             </label>
           </div>
@@ -181,7 +183,7 @@ export function ImportModal({
             </Button>
           </div>
         </div>
-      )}
+      }
     </Modal>
   );
 }

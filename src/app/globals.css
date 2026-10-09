@@ -194,12 +194,25 @@ html[data-mode="light"] .grain {
 }
 
 /* text size */
-html[data-size="s"] { font-size: 14.5px; }
-html[data-size="m"] { font-size: 16px; }
-html[data-size="l"] { font-size: 17.5px; }
+html[data-size="s"] {
+  font-size: 14.5px;
+}
+html[data-size="m"] {
+  font-size: 16px;
+}
+html[data-size="l"] {
+  font-size: 17.5px;
+}
 
 /* headline style */
-html[data-headline="sans"] { --font-display: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif; }
-html[data-headline="mono"] { --font-display: var(--font-geist-mono), ui-monospace, monospace; }
+html[data-headline="sans"] {
+  --font-display: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+html[data-headline="mono"] {
+  --font-display: var(--font-geist-mono), ui-monospace, monospace;
+}
 html[data-headline="sans"] .font-display,
-html[data-headline="mono"] .font-display { font-style: normal; letter-spacing: -0.02em; }
+html[data-headline="mono"] .font-display {
+  font-style: normal;
+  letter-spacing: -0.02em;
+}

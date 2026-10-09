@@ -126,12 +126,20 @@ export function installNetguard() {
 
   const origOpen = XMLHttpRequest.prototype.open;
   const origSend = XMLHttpRequest.prototype.send;
-  XMLHttpRequest.prototype.open = function (this: XMLHttpRequest & { __sift?: [string, string] }, method: string, url: string | URL, ...rest: unknown[]) {
+  XMLHttpRequest.prototype.open = function (
+    this: XMLHttpRequest & { __sift?: [string, string] },
+    method: string,
+    url: string | URL,
+    ...rest: unknown[]
+  ) {
     this.__sift = [method, String(url)];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (origOpen as any).call(this, method, url, ...rest);
   } as typeof XMLHttpRequest.prototype.open;
-  XMLHttpRequest.prototype.send = function (this: XMLHttpRequest & { __sift?: [string, string] }, body?: Document | XMLHttpRequestBodyInit | null) {
+  XMLHttpRequest.prototype.send = function (
+    this: XMLHttpRequest & { __sift?: [string, string] },
+    body?: Document | XMLHttpRequestBodyInit | null,
+  ) {
     const [m, u] = this.__sift ?? ["GET", ""];
     const ev = inspect(m, u, body);
     if (ev.blocked) throw new TypeError(`Sift privacy firewall blocked ${ev.url}`);

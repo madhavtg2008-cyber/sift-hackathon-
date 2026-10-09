@@ -12,7 +12,9 @@ const rtf = typeof Intl !== "undefined" ? new Intl.RelativeTimeFormat("en", { nu
 export function relTime(ts: number, now = Date.now()) {
   const diff = ts - now;
   const abs = Math.abs(diff);
-  const min = 60_000, hr = 3_600_000, day = 86_400_000;
+  const min = 60_000,
+    hr = 3_600_000,
+    day = 86_400_000;
   if (!rtf) return new Date(ts).toLocaleString();
   if (abs < min) return "just now";
   if (abs < hr) return rtf.format(Math.round(diff / min), "minute");

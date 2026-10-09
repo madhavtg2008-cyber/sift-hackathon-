@@ -11,8 +11,7 @@ export interface ParseResult {
 // Android: 12/10/24, 9:41 pm - Name: msg     iOS: [12/10/24, 9:41:22 PM] Name: msg
 const WA_LINE =
   /^\[?(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4}),?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([aApP]\.?\s?[mM]\.?)?\]?\s*(?:-\s*)?([^:]{1,60}?):\s([\s\S]*)$/;
-const WA_SYSTEM =
-  /^\[?(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4}),?\s+(\d{1,2}):(\d{2})/;
+const WA_SYSTEM = /^\[?(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4}),?\s+(\d{1,2}):(\d{2})/;
 
 // Generic: "[10:30] Name: msg", "Name (10:30): msg", "Name: msg"
 const GENERIC_LINE =
@@ -88,6 +87,11 @@ function pickStr(o: JsonMsg, keys: string[]): string | undefined {
 }
 
 function pickTs(o: JsonMsg): number | undefined {
+  const t = rawTs(o);
+  return t === undefined ? undefined : Math.round(t); // Slack "ts" values carry fractional seconds
+}
+
+function rawTs(o: JsonMsg): number | undefined {
   for (const k of ["ts", "timestamp", "time", "date", "created_at", "createdAt", "sent_at"]) {
     const v = o[k];
     if (typeof v === "number") return v < 1e12 ? v * 1000 : v;

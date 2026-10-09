@@ -35,8 +35,14 @@ type AiState =
   | { s: "unsupported" }
   | { s: "error"; msg: string };
 
+const PAGE = 300;
+
 export function ConversationView({ conv, analysis, items, profile, focusMsgId, isMe, focusMode = false, actions, onBack }: Props) {
   const [highlightsOnly, setHighlightsOnly] = useState(focusMode && !focusMsgId);
+  // Windowed rendering: only the newest PAGE messages are in the DOM; older ones load on demand.
+  const [windowSize, setWindowSize] = useState(PAGE);
+  const focusIdx = focusMsgId ? conv.messages.findIndex((m) => m.id === focusMsgId) : -1;
+  const start = Math.max(0, Math.min(conv.messages.length - windowSize, focusIdx >= 0 ? focusIdx - 20 : Infinity));
   const [ai, setAi] = useState<AiState>({ s: "idle" });
   const [aiAvail, setAiAvail] = useState<string>("checking");
   const [composer, setComposer] = useState<"reply" | "paste">("reply");
@@ -55,7 +61,9 @@ export function ConversationView({ conv, analysis, items, profile, focusMsgId, i
 
   useEffect(() => {
     onDeviceStatus().then((s) => {
-      const best = [s.prompt, s.summarizer].find((x) => x === "available") ?? [s.prompt, s.summarizer].find((x) => x === "downloadable" || x === "downloading");
+      const best =
+        [s.prompt, s.summarizer].find((x) => x === "available") ??
+        [s.prompt, s.summarizer].find((x) => x === "downloadable" || x === "downloading");
       setAiAvail(best ?? "unsupported");
     });
   }, []);
@@ -185,7 +193,14 @@ export function ConversationView({ conv, analysis, items, profile, focusMsgId, i
                 title="Rename chat"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden>
-                  <path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path
+                    d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
               </button>
             </div>
@@ -241,7 +256,12 @@ export function ConversationView({ conv, analysis, items, profile, focusMsgId, i
                       : "Local engine"}
               </span>
               <Button size="sm" variant={ai.s === "done" ? "ghost" : "outline"} onClick={runAi} disabled={ai.s === "running"}>
-                ✦ {ai.s === "running" ? (ai.pct !== undefined && ai.pct < 100 ? `Downloading model ${ai.pct}%` : "Summarizing…") : "AI summary (on-device)"}
+                ✦{" "}
+                {ai.s === "running"
+                  ? ai.pct !== undefined && ai.pct < 100
+                    ? `Downloading model ${ai.pct}%`
+                    : "Summarizing…"
+                  : "AI summary (on-device)"}
               </Button>
             </div>
           </div>
@@ -271,13 +291,14 @@ export function ConversationView({ conv, analysis, items, profile, focusMsgId, i
           )}
           {ai.s === "unsupported" && (
             <p className="mt-3 rounded-lg bg-panel2 p-3 text-xs leading-relaxed text-muted">
-              This browser doesn&apos;t expose an on-device model, so Sift is using its local rules engine (above) — it never falls back to a
-              cloud AI. For Gemini Nano, use desktop Chrome 138+ (the Summarizer API is built in).
+              This browser doesn&apos;t expose an on-device model, so Sift is using its local rules engine (above) — it never falls back to
+              a cloud AI. For Gemini Nano, use desktop Chrome 138+ (the Summarizer API is built in).
             </p>
           )}
           {ai.s === "error" && (
             <p className="mt-3 rounded-lg bg-panel2 p-3 text-xs text-muted">
-              The on-device model couldn&apos;t summarise this chat ({ai.msg}). Sift&apos;s local summary above is still accurate — nothing was sent anywhere.
+              The on-device model couldn&apos;t summarise this chat ({ai.msg}). Sift&apos;s local summary above is still accurate — nothing
+              was sent anywhere.
             </p>
           )}
         </section>
@@ -298,12 +319,22 @@ export function ConversationView({ conv, analysis, items, profile, focusMsgId, i
               </button>
             ))}
           </div>
-
         </div>
 
         {/* thread */}
         <ol className="space-y-1 px-4 pb-6 sm:px-6">
-          {conv.messages.map((m, idx) => {
+          {start > 0 && (
+            <li className="py-2 text-center">
+              <button
+                onClick={() => setWindowSize((w) => w + PAGE)}
+                className="rounded-full border border-line2 px-3 py-1 text-xs text-muted hover:border-accent hover:text-ink"
+              >
+                Show {Math.min(PAGE, start)} earlier messages ({start} hidden)
+              </button>
+            </li>
+          )}
+          {conv.messages.slice(start).map((m, i) => {
+            const idx = start + i;
             const ins = byMsg.get(m.id);
             const st = ins ? items[ins.key] : undefined;
             const mine = isMe(m.author);
@@ -332,7 +363,11 @@ export function ConversationView({ conv, analysis, items, profile, focusMsgId, i
               );
             if (idx === firstUnread && analysis.unread > 0)
               nodes.push(
-                <li key={`u-${m.id}`} id="unread-divider" className="flex items-center gap-3 py-2 text-[0.6875rem] font-semibold uppercase tracking-wider text-accent">
+                <li
+                  key={`u-${m.id}`}
+                  id="unread-divider"
+                  className="flex items-center gap-3 py-2 text-[0.6875rem] font-semibold uppercase tracking-wider text-accent"
+                >
                   <span className="h-px flex-1 bg-accent/40" /> New messages <span className="h-px flex-1 bg-accent/40" />
                 </li>,
               );
@@ -345,9 +380,23 @@ export function ConversationView({ conv, analysis, items, profile, focusMsgId, i
                     className={`rounded-2xl px-3.5 py-2 text-[0.875rem] leading-relaxed ${
                       mine ? "rounded-tr-sm bg-accent/15 text-ink" : "rounded-tl-sm bg-panel"
                     } ${ins && st?.done ? "opacity-60" : ""}`}
-                    style={ins ? { boxShadow: `inset 3px 0 0 ${accent}`, background: !mine ? `color-mix(in srgb, ${accent} 7%, var(--color-panel))` : undefined } : undefined}
+                    style={
+                      ins
+                        ? {
+                            boxShadow: `inset 3px 0 0 ${accent}`,
+                            background: !mine ? `color-mix(in srgb, ${accent} 7%, var(--color-panel))` : undefined,
+                          }
+                        : undefined
+                    }
                   >
-                    {!mine && <p className="mb-0.5 text-[0.75rem] font-semibold" style={{ color: `hsl(${hueFor(m.author)} 65% calc(var(--av-fg-l) - 4%))` }}>{m.author}</p>}
+                    {!mine && (
+                      <p
+                        className="mb-0.5 text-[0.75rem] font-semibold"
+                        style={{ color: `hsl(${hueFor(m.author)} 65% calc(var(--av-fg-l) - 4%))` }}
+                      >
+                        {m.author}
+                      </p>
+                    )}
                     <p className="whitespace-pre-wrap break-words">{m.text}</p>
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-1.5 px-1">
@@ -357,7 +406,11 @@ export function ConversationView({ conv, analysis, items, profile, focusMsgId, i
                         {ins.kinds.map((k) => (
                           <KindChip key={k} kind={k} compact />
                         ))}
-                        {ins.due && <span className={`font-mono text-[0.6562rem] ${ins.due.overdue ? "text-crit" : "text-k-deadline"}`}>{ins.due.label}</span>}
+                        {ins.due && (
+                          <span className={`font-mono text-[0.6562rem] ${ins.due.overdue ? "text-crit" : "text-k-deadline"}`}>
+                            {ins.due.label}
+                          </span>
+                        )}
                         <button
                           onClick={() => actions.setItem(ins.key, { done: !st?.done })}
                           className={`rounded px-1.5 text-[0.6562rem] ${st?.done ? "text-accent" : "text-faint hover:text-ink"}`}
@@ -367,7 +420,10 @@ export function ConversationView({ conv, analysis, items, profile, focusMsgId, i
                       </>
                     )}
                     {idx >= firstUnread && !mine && (
-                      <button onClick={() => actions.markRead(conv.id, idx)} className="hidden text-[0.6562rem] text-faint hover:text-ink group-hover:inline">
+                      <button
+                        onClick={() => actions.markRead(conv.id, idx)}
+                        className="hidden text-[0.6562rem] text-faint hover:text-ink group-hover:inline"
+                      >
                         read up to here
                       </button>
                     )}
@@ -389,7 +445,11 @@ export function ConversationView({ conv, analysis, items, profile, focusMsgId, i
               ["paste", "Paste new messages"],
             ] as const
           ).map(([k, l]) => (
-            <button key={k} onClick={() => setComposer(k)} className={composer === k ? "font-semibold text-ink" : "text-muted hover:text-ink"}>
+            <button
+              key={k}
+              onClick={() => setComposer(k)}
+              className={composer === k ? "font-semibold text-ink" : "text-muted hover:text-ink"}
+            >
               {l}
             </button>
           ))}
@@ -412,7 +472,11 @@ export function ConversationView({ conv, analysis, items, profile, focusMsgId, i
               }
             }}
             rows={composer === "paste" ? 3 : 1}
-            placeholder={composer === "reply" ? `Note what you replied, as ${profile.name}… (marks questions answered)` : "Name: message — one per line. Added as unread."}
+            placeholder={
+              composer === "reply"
+                ? `Note what you replied, as ${profile.name}… (marks questions answered)`
+                : "Name: message — one per line. Added as unread."
+            }
             className={`${inputCls} resize-none`}
           />
           <Button variant="primary" type="submit" disabled={!draft.trim()}>

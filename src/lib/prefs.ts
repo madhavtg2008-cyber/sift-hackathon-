@@ -23,4 +23,3 @@ export function usePrefs() {
     });
   return { prefs, update };
 }
-

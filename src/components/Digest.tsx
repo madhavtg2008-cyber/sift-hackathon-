@@ -54,7 +54,9 @@ export function Digest({
   const unreadTotal = [...analyses.values()].reduce((n, a) => n + a.unread, 0);
   const unreadChats = [...analyses.values()].filter((a) => a.unread > 0).length;
   const needsYou = open.filter((i) => i.forMe && i.score >= 48).sort((a, b) => b.score - a.score);
-  const needReply = open.filter((i) => i.kinds.includes("question") && i.forMe && !i.answered && !i.reasons.includes("Question to the group"));
+  const needReply = open.filter(
+    (i) => i.kinds.includes("question") && i.forMe && !i.answered && !i.reasons.includes("Question to the group"),
+  );
   const deadlines = open
     .filter((i) => i.due && (i.forMe || i.kinds.includes("action") || i.kinds.includes("decision") || i.kinds.includes("urgent")))
     .filter((i) => i.due!.ts > now - 3 * 86_400_000 && i.due!.ts < now + 14 * 86_400_000)
@@ -71,7 +73,6 @@ export function Digest({
   const unreadHighlights = open.filter((i) => i.unread);
   const highlightWords = unreadHighlights.reduce((w, i) => w + i.text.split(/\s+/).length, 0);
   const savedMin = Math.max(0, (unreadWords - highlightWords) / 200 + (unreadTotal - unreadHighlights.length) * 0.05);
-
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 sm:px-8 sm:py-8">
@@ -147,7 +148,10 @@ export function Digest({
                 <InsightCard key={i.key} insight={i} state={items[i.key]} actions={actions} index={idx} showReasons={showReasons} />
               ))}
               {needsYou.length > 5 && (
-                <button onClick={() => openList("action")} className="w-full rounded-xl py-2 text-sm text-muted hover:bg-panel hover:text-ink">
+                <button
+                  onClick={() => openList("action")}
+                  className="w-full rounded-xl py-2 text-sm text-muted hover:bg-panel hover:text-ink"
+                >
                   See {needsYou.length - 5} more →
                 </button>
               )}
@@ -225,7 +229,6 @@ export function Digest({
           )}
         </aside>
       </div>
-
     </div>
   );
 }

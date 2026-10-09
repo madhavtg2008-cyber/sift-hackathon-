@@ -15,8 +15,5 @@ export function GET() {
 
 /** The server refuses any payload outright and never reads or logs the body. */
 export function POST() {
-  return NextResponse.json(
-    { ok: false, error: "Sift's server does not accept conversation data." },
-    { status: 403 },
-  );
+  return NextResponse.json({ ok: false, error: "Sift's server does not accept conversation data." }, { status: 403 });
 }

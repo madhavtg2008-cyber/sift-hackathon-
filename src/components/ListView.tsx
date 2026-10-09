@@ -43,11 +43,7 @@ export function ListView({
     .filter((i) => showDone || !items[i.key]?.done)
     .filter((i) => showSnoozed || (items[i.key]?.snoozedUntil ?? 0) <= now)
     .sort((a, b) =>
-      sort === "priority"
-        ? b.score - a.score
-        : sort === "recent"
-          ? b.ts - a.ts
-          : (a.due?.ts ?? Infinity) - (b.due?.ts ?? Infinity),
+      sort === "priority" ? b.score - a.score : sort === "recent" ? b.ts - a.ts : (a.due?.ts ?? Infinity) - (b.due?.ts ?? Infinity),
     );
 
   const [title, desc] = TITLES[filter];
@@ -71,7 +67,11 @@ export function ListView({
               ["all", "Everything"],
             ] as const
           ).map(([k, l]) => (
-            <button key={k} onClick={() => setScope(k)} className={`rounded-md px-2.5 py-1 ${scope === k ? "bg-panel2 text-ink" : "text-muted hover:text-ink"}`}>
+            <button
+              key={k}
+              onClick={() => setScope(k)}
+              className={`rounded-md px-2.5 py-1 ${scope === k ? "bg-panel2 text-ink" : "text-muted hover:text-ink"}`}
+            >
               {l}
             </button>
           ))}
@@ -87,12 +87,22 @@ export function ListView({
           <option value="recent">Sort: most recent</option>
         </select>
         <label className="ml-auto flex items-center gap-1.5 text-muted">
-          <input type="checkbox" checked={showDone} onChange={(e) => setShowDone(e.target.checked)} className="accent-[var(--color-accent)]" />
+          <input
+            type="checkbox"
+            checked={showDone}
+            onChange={(e) => setShowDone(e.target.checked)}
+            className="accent-[var(--color-accent)]"
+          />
           Show done ({doneCount})
         </label>
         {snoozedCount > 0 && (
           <label className="flex items-center gap-1.5 text-muted">
-            <input type="checkbox" checked={showSnoozed} onChange={(e) => setShowSnoozed(e.target.checked)} className="accent-[var(--color-accent)]" />
+            <input
+              type="checkbox"
+              checked={showSnoozed}
+              onChange={(e) => setShowSnoozed(e.target.checked)}
+              className="accent-[var(--color-accent)]"
+            />
             Snoozed ({snoozedCount})
           </label>
         )}
@@ -100,11 +110,17 @@ export function ListView({
 
       <div className="mt-4 space-y-2.5">
         {list.length ? (
-          list.map((i, idx) => <InsightCard key={i.key} insight={i} state={items[i.key]} actions={actions} index={idx} showReasons={showReasons} />)
+          list.map((i, idx) => (
+            <InsightCard key={i.key} insight={i} state={items[i.key]} actions={actions} index={idx} showReasons={showReasons} />
+          ))
         ) : (
           <Empty
             title="All clear"
-            body={scope === "me" ? "Nothing here for you. Switch to “Everything” to see the whole group's items." : "No items found in your chats."}
+            body={
+              scope === "me"
+                ? "Nothing here for you. Switch to “Everything” to see the whole group's items."
+                : "No items found in your chats."
+            }
           />
         )}
       </div>

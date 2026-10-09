@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { nameFromFile, parseChat } from "@/lib/parser";
+import { chatFromFile, type LoadedChat } from "@/lib/share";
 import type { Message, Source } from "@/lib/types";
 import { Button, Field, inputCls, Modal } from "./ui";
 
@@ -17,11 +18,14 @@ export function ImportModal({
   onClose,
   onImport,
   myName,
+  initial,
 }: {
   open: boolean;
   onClose: () => void;
   onImport: (name: string, source: Source, messages: Omit<Message, "id">[], readCount: number) => void;
   myName: string;
+  /** A chat handed over by "Share to Sift", to pre-fill the dialog. */
+  initial?: LoadedChat | null;
 }) {
   const [tab, setTab] = useState<Tab>("file");
   const [text, setText] = useState("");
@@ -31,6 +35,14 @@ export function ImportModal({
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!initial) return;
+    setTab("file");
+    setText(initial.text);
+    setFileName(initial.name);
+    setName(nameFromFile(initial.name));
+  }, [initial]);
 
   const parsed = useMemo(() => (text.trim() ? parseChat(text) : null), [text]);
   const participants = useMemo(() => (parsed ? Array.from(new Set(parsed.messages.map((m) => m.author))) : []), [parsed]);
@@ -44,12 +56,16 @@ export function ImportModal({
 
   const readFile = async (file: File) => {
     setError("");
-    if (file.size > 8 * 1024 * 1024) return setError("That file is over 8 MB. Export a shorter chat (without media).");
-    // File is read locally with the File API — it is never uploaded.
-    const content = await file.text();
-    setText(content);
-    setFileName(file.name);
-    if (!name) setName(nameFromFile(file.name));
+    if (file.size > 20 * 1024 * 1024) return setError("That file is over 20 MB. Export the chat without media.");
+    try {
+      // Read locally with the File API (and unzipped in the browser if needed) — never uploaded.
+      const chat = await chatFromFile(file);
+      setText(chat.text);
+      setFileName(file.name);
+      if (!name) setName(nameFromFile(chat.name));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't read that file.");
+    }
   };
 
   const submit = () => {
@@ -126,21 +142,27 @@ export function ImportModal({
                 }`}
               >
                 <span className="text-2xl">⇪</span>
-                <p className="mt-2 text-sm">{fileName ? fileName : "Drop a .txt or .json chat export, or click to choose"}</p>
+                <p className="mt-2 text-sm">{fileName ? fileName : "Drop a WhatsApp export (.txt or .zip) or .json, or click to choose"}</p>
                 <p className="mt-1 text-xs text-faint">Read locally in your browser — never uploaded.</p>
                 <input
                   ref={fileRef}
                   type="file"
-                  accept=".txt,.json,text/plain,application/json"
+                  accept=".txt,.zip,.json,text/plain,application/zip,application/json"
                   className="hidden"
                   onChange={(e) => e.target.files?.[0] && readFile(e.target.files[0])}
                 />
               </div>
               <details className="mt-3 text-xs text-muted">
                 <summary className="cursor-pointer hover:text-ink">How do I export a WhatsApp chat?</summary>
-                <p className="mt-2 leading-relaxed">
-                  Open the chat → tap the name (or ⋮ menu) → <b>Export chat</b> → <b>Without media</b>. Save the .txt file and drop it here.
-                </p>
+                <ol className="mt-2 list-decimal space-y-1 pl-4 leading-relaxed">
+                  <li>Open the chat → tap ⋮ (Android) or the group name (iPhone).</li>
+                  <li>
+                    Choose <b>More → Export chat</b> → <b>Without media</b>.
+                  </li>
+                  <li>
+                    On Android with Sift installed, pick <b>Sift</b> in the share sheet. Otherwise save the .txt or .zip and drop it here.
+                  </li>
+                </ol>
               </details>
             </div>
           )}

@@ -11,6 +11,9 @@ export const metadata: Metadata = {
   title: "Sift — catch up on chats, privately",
   description:
     "Sift reads your overwhelming group chats and surfaces the mentions, decisions, deadlines and tasks that matter. Everything runs on your device.",
+  manifest: "/manifest.webmanifest",
+  icons: { icon: "/icon-192.png", apple: "/apple-touch-icon.png" },
+  appleWebApp: { capable: true, title: "Sift", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {

@@ -46,6 +46,20 @@ export function Digest({
             </Button>
           }
         />
+        <ol className="mt-6 grid gap-3 sm:grid-cols-3">
+          {[
+            ["Export", "In WhatsApp, open a busy chat → ⋮ → More → Export chat → Without media."],
+            ["Share or drop", "Pick Sift in the share sheet (Android app), or drop the .txt / .zip here."],
+            ["Catch up", "Sift ranks mentions, tasks, deadlines and decisions — all on this device."],
+          ].map(([t, d], i) => (
+            <li key={t} className="rise rounded-2xl border border-line bg-panel p-4" style={{ animationDelay: `${i * 60}ms` }}>
+              <span className="font-mono text-xs text-accent">0{i + 1}</span>
+              <p className="mt-1 font-medium">{t}</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted">{d}</p>
+            </li>
+          ))}
+        </ol>
+        <p className="mt-4 text-center text-[0.6875rem] text-faint">Tip: press / to search and n to add a chat.</p>
       </div>
     );
 

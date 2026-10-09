@@ -232,6 +232,17 @@ export function useAppData() {
     setItem: (key: string, patch: Partial<ItemState>) =>
       update((d) => ({ ...d, items: { ...d.items, [key]: { ...d.items[key], ...patch } } })),
 
+    /** Puts back a deleted conversation and its item states (used by "Undo"). */
+    restoreConversation: (conv: Conversation, items: Record<string, ItemState>) =>
+      update((d) => ({ ...d, conversations: [...d.conversations, conv], items: { ...d.items, ...items } })),
+
+    /** Restores read positions, e.g. to undo "mark everything read". */
+    setReadIndexes: (indexes: Record<string, number>) =>
+      update((d) => ({
+        ...d,
+        conversations: d.conversations.map((c) => (c.id in indexes ? { ...c, lastReadIndex: indexes[c.id] } : c)),
+      })),
+
     importBackup: (backup: AppData) => setData({ ...EMPTY, ...backup }),
 
     wipe: () => {

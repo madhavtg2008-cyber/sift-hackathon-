@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { transcript } from "@/lib/engine";
 import { onDeviceStatus, onDeviceSummarize } from "@/lib/ondevice";
 import { parseChat } from "@/lib/parser";
@@ -60,13 +60,25 @@ export function ConversationView({ conv, analysis, items, profile, focusMsgId, i
     });
   }, []);
 
-  // On open with no specific message, jump to the first unread message
+  // Like a messaging app: open at the latest message, and follow new messages as they're added
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const toBottom = (smooth = false) => {
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+  };
   useEffect(() => {
     if (focusMsgId) return;
-    const t = setTimeout(() => document.getElementById("unread-divider")?.scrollIntoView({ block: "center" }), 60);
+    toBottom();
+    const t = setTimeout(() => toBottom(), 80); // after fonts/layout settle
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conv.id]);
+  const msgCount = conv.messages.length;
+  const prevCount = useRef(msgCount);
+  useEffect(() => {
+    if (msgCount > prevCount.current) setTimeout(() => toBottom(true), 30);
+    prevCount.current = msgCount;
+  }, [msgCount]);
 
   useEffect(() => {
     if (!focusMsgId) return;
@@ -175,7 +187,7 @@ export function ConversationView({ conv, analysis, items, profile, focusMsgId, i
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
         {/* summary */}
         <section className="mx-4 mt-4 rounded-2xl border border-line bg-panel p-4 sm:mx-6">
           <div className="flex flex-wrap items-center justify-between gap-2">

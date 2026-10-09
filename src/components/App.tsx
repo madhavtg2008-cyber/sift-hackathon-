@@ -31,6 +31,24 @@ export default function App() {
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [confirmDel, setConfirmDel] = useState<string | null>(null);
+  const [chatsOpen, setChatsOpen] = useState(true);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("sift:chatsOpen") === "0") setChatsOpen(false);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  const toggleChats = () =>
+    setChatsOpen((o) => {
+      try {
+        localStorage.setItem("sift:chatsOpen", o ? "0" : "1");
+      } catch {
+        /* ignore */
+      }
+      return !o;
+    });
   const events = useNetEvents();
   const dataRef = useRef(data);
   dataRef.current = data;
@@ -125,6 +143,7 @@ export default function App() {
   }
 
   const blockedCount = events.filter((e) => e.blocked).length;
+  const totalUnread = [...analyses.values()].reduce((n, a) => n + a.unread, 0);
   const convs = [...data.conversations].sort(
     (a, b) => Number(!!b.pinned) - Number(!!a.pinned) || (analyses.get(b.id)?.score ?? 0) - (analyses.get(a.id)?.score ?? 0),
   );
@@ -163,47 +182,93 @@ export default function App() {
       </div>
 
       <div className="min-h-0 flex-1">
-        <div className="mb-2 flex items-center justify-between px-2">
-          <span className="text-[0.6875rem] font-semibold uppercase tracking-wider text-faint">Chats</span>
+        <div className="mb-1 flex items-center justify-between px-1">
+          <button
+            onClick={() => toggleChats()}
+            aria-expanded={chatsOpen}
+            className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-faint hover:text-ink"
+          >
+            <span className={`inline-block transition-transform ${chatsOpen ? "rotate-90" : ""}`}>▸</span>
+            Chats
+            <span className="font-mono normal-case tracking-normal">({convs.length})</span>
+            {!chatsOpen && totalUnread > 0 && (
+              <span className="rounded-full bg-accent px-1.5 text-[0.625rem] font-bold normal-case tracking-normal text-accent-ink">{totalUnread}</span>
+            )}
+          </button>
           <button onClick={() => setImportOpen(true)} className="rounded-md px-1.5 text-sm text-muted hover:bg-panel2 hover:text-ink" aria-label="Add conversation">
             +
           </button>
         </div>
-        <div className="space-y-0.5">
-          {convs.map((c) => {
-            const a = analyses.get(c.id);
-            const last = c.messages[c.messages.length - 1];
-            const active = view.kind === "conv" && view.id === c.id;
-            return (
-              <button
-                key={c.id}
-                onClick={() => openConv(c.id)}
-                className={`flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-left transition ${active ? "bg-panel2" : "hover:bg-panel2/60"}`}
-              >
-                <Avatar name={c.name.replace(/[^\p{L}\s]/gu, "") || c.name} size={30} />
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5">
-                    {a && <PriorityDot priority={a.priority} />}
-                    <span className={`truncate text-[0.8125rem] ${a?.unread ? "font-semibold text-ink" : "text-muted"}`}>{c.name}</span>
-                    {c.pinned && <span className="text-[0.625rem] text-med">★</span>}
+        {chatsOpen && (
+          <div className="rise space-y-0.5">
+            {convs.map((c) => {
+              const a = analyses.get(c.id);
+              const last = c.messages[c.messages.length - 1];
+              const active = view.kind === "conv" && view.id === c.id;
+              if (confirmDel === c.id)
+                return (
+                  <div key={c.id} className="rounded-lg border border-crit/40 bg-crit/10 px-2.5 py-2">
+                    <p className="truncate text-[0.8125rem]">
+                      Delete <b>{c.name}</b>?
+                    </p>
+                    <p className="text-[0.6875rem] text-muted">Removes its messages and tasks from this device.</p>
+                    <div className="mt-2 flex gap-1.5">
+                      <button
+                        autoFocus
+                        onClick={() => {
+                          actions.deleteConversation(c.id);
+                          if (active) setView({ kind: "digest" });
+                          setConfirmDel(null);
+                        }}
+                        className="rounded-md bg-crit px-2.5 py-1 text-xs font-semibold text-white hover:brightness-110"
+                      >
+                        Yes, delete
+                      </button>
+                      <button onClick={() => setConfirmDel(null)} className="rounded-md px-2.5 py-1 text-xs text-muted hover:bg-panel2 hover:text-ink">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                );
+              return (
+                <div
+                  key={c.id}
+                  className={`group relative flex w-full items-start gap-2.5 rounded-lg px-2 py-2 transition ${active ? "bg-panel2" : "hover:bg-panel2/60"}`}
+                >
+                  <button onClick={() => openConv(c.id)} className="absolute inset-0 rounded-lg" aria-label={`Open ${c.name}`} />
+                  <Avatar name={c.name.replace(/[^\p{L}\s]/gu, "") || c.name} size={30} />
+                  <span className="pointer-events-none min-w-0 flex-1">
+                    <span className="flex items-center gap-1.5">
+                      {a && <PriorityDot priority={a.priority} />}
+                      <span className={`truncate text-[0.8125rem] ${a?.unread ? "font-semibold text-ink" : "text-muted"}`}>{c.name}</span>
+                      {c.pinned && <span className="text-[0.625rem] text-med">★</span>}
+                    </span>
+                    <span className="mt-0.5 block truncate text-[0.7188rem] text-faint">
+                      {last ? `${last.author.split(" ")[0]}: ${last.text}` : "No messages"}
+                    </span>
                   </span>
-                  <span className="mt-0.5 block truncate text-[0.7188rem] text-faint">
-                    {last ? `${last.author.split(" ")[0]}: ${last.text}` : "No messages"}
+                  <span className="pointer-events-none flex shrink-0 flex-col items-end gap-1 group-hover:invisible">
+                    <span className="text-[0.625rem] text-faint">{last ? relTime(last.ts, now) : ""}</span>
+                    {!!a?.unread && <span className="rounded-full bg-accent px-1.5 text-[0.625rem] font-bold text-accent-ink">{a.unread}</span>}
                   </span>
-                </span>
-                <span className="flex shrink-0 flex-col items-end gap-1">
-                  <span className="text-[0.625rem] text-faint">{last ? relTime(last.ts, now) : ""}</span>
-                  {!!a?.unread && <span className="rounded-full bg-accent px-1.5 text-[0.625rem] font-bold text-accent-ink">{a.unread}</span>}
-                </span>
+                  <button
+                    onClick={() => setConfirmDel(c.id)}
+                    className="absolute right-1.5 top-1/2 z-10 -translate-y-1/2 rounded-md p-1.5 text-muted opacity-0 transition hover:bg-crit/15 hover:text-crit focus:opacity-100 group-hover:opacity-100 max-lg:opacity-60"
+                    aria-label={`Delete ${c.name}`}
+                    title="Delete chat"
+                  >
+                    <TrashIcon />
+                  </button>
+                </div>
+              );
+            })}
+            {!convs.length && (
+              <button onClick={() => setImportOpen(true)} className="w-full rounded-lg border border-dashed border-line2 px-3 py-4 text-xs text-muted hover:text-ink">
+                + Add your first chat
               </button>
-            );
-          })}
-          {!convs.length && (
-            <button onClick={() => setImportOpen(true)} className="w-full rounded-lg border border-dashed border-line2 px-3 py-4 text-xs text-muted hover:text-ink">
-              + Add your first chat
-            </button>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="space-y-2 border-t border-line pt-3 text-[0.6875rem] text-faint">
@@ -407,6 +472,14 @@ function Logo() {
       </svg>
       <span className="font-display text-2xl italic leading-none">sift</span>
     </span>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden>
+      <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
